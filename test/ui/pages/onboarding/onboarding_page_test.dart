@@ -36,10 +36,12 @@ void main() {
     expect(find.text('3'), findsOneWidget);
   });
 
-  testWidgets('실제 학생 학번 · 이름 예시는 들어가지 않는다', (tester) async {
+  testWidgets('입금자명 예시는 실제 학생 대신 “학번 이름” 자리 표시로 보인다', (tester) async {
     await _pumpOnboarding(tester);
-    expect(find.textContaining('2205'), findsNothing);
+    expect(find.textContaining('“학번 이름”'), findsOneWidget);
     expect(find.text('입금자명을 “학번 이름” 형식으로 보내요'), findsOneWidget);
+    // 학번처럼 보이는 네 자리 숫자가 화면에 없어야 합니다.
+    expect(find.textContaining(RegExp(r'\d{4}')), findsNothing);
   });
 
   testWidgets('일러스트 자리: 가로 꽉 참, 높이 160, 라디우스 16', (tester) async {
