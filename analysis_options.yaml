@@ -1,0 +1,18 @@
+# 정적 분석 설정. `flutter analyze` 가 이 파일을 읽습니다.
+# 기본 규칙은 flutter_lints 의 추천 세트를 그대로 씁니다.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+linter:
+  # 규칙을 끄거나 켜고 싶으면 여기에 적습니다. (https://dart.dev/lints)
+  rules:
+    prefer_single_quotes: true

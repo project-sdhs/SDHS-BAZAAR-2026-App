@@ -1,0 +1,45 @@
+name: bazaar_app
+description: "디지텍 바자회 학생 앱 (크레딧 결제)"
+# pub.dev 에 실수로 배포되지 않도록 막아 둡니다.
+publish_to: 'none'
+
+# 버전: <이름>+<빌드 번호>. 스토어 배포 때 올립니다.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  # 화면 이동 (lib/core/router)
+  go_router: ^18.0.2
+  # 상태 관리 (lib/state, ChangeNotifier)
+  provider: ^6.1.5+1
+  # 서버 통신 (lib/data/api)
+  http: ^1.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # 추천 린트 규칙. analysis_options.yaml 에서 켜고 끕니다.
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # 폰트: Pretendard (SIL OFL 1.1, assets/fonts/OFL.txt)
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Pretendard-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Pretendard-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Pretendard-Bold.ttf
+          weight: 700
