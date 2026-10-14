@@ -4,7 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
-/// 홈 화면 (임시). 실제 화면은 이후 PR 에서 만듭니다.
+/// 홈 탭 (임시). 실제 화면은 이후 PR 에서 만듭니다.
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 

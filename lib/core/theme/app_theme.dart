@@ -15,6 +15,8 @@ abstract final class AppTheme {
       onPrimaryContainer: AppColors.weakForeground,
       secondary: AppColors.primary,
       onSecondary: AppColors.onPrimary,
+      secondaryContainer: AppColors.weakBackground,
+      onSecondaryContainer: AppColors.weakForeground,
       error: AppColors.danger,
       onError: AppColors.onPrimary,
       errorContainer: AppColors.dangerWeak,

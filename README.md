@@ -54,14 +54,32 @@ lib/
     repositories/      ApiClient → model 로 바꿔 주는 저장소
   state/               provider 의 ChangeNotifier 상태
   ui/
-    components/        재사용 디자인 시스템 위젯
-    pages/             화면 1개 = 폴더 1개 (home/ …)
+    components/
+      buttons/         AppButton · BottomCTA (buttons.dart 하나만 import)
+    pages/             화면 1개 = 폴더 1개
+      onboarding/      온보딩 1페이지 (+ widgets/page_indicator.dart)
+      login/           로그인 (임시)
+      shell/           하단 탭 5개 틀 (MainShell)
+      home/ booths/ pay/ map/ my/   탭 화면 (임시)
+      dev/             버튼 카탈로그 (디버그 빌드에서만 /dev/buttons)
 test/                  lib/ 와 같은 구조로 테스트를 둡니다
 assets/fonts/          Pretendard 폰트 + 라이선스 (OFL.txt)
 ```
 
 화면 색 · 글자 · 여백은 `core/theme` 의 토큰(`AppColors`, `AppTypography`, `AppSpacing`, `AppRadius`)만 씁니다.
 `Color(0xFF...)` 를 화면 코드에 직접 쓰지 마세요.
+
+## 화면 이동 · 버튼
+
+- 경로는 `core/router/routes.dart` 의 상수로만 씁니다: `context.go(Routes.login)`
+- 앱은 `/onboarding` 에서 시작 → `/login` → 하단 탭(`/home` `/booths` `/pay` `/map` `/my`)
+- 버튼은 직접 만들지 말고 `AppButton` 을 씁니다.
+
+```dart
+AppButton('결제하기', onPressed: () { ... })
+AppButton('취소', size: AppButtonSize.medium, variant: AppButtonVariant.light, onPressed: ...)
+AppButton('충전하기', loading: isLoading, expand: true, onPressed: ...)
+```
 
 ## 브랜치 · PR 규칙
 
