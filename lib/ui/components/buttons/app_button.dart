@@ -89,6 +89,7 @@ enum AppButtonVariant {
 ///
 /// - `onPressed: null` 또는 `enabled: false` → 비활성(회색), 눌리지 않음
 /// - `loading: true` → 폭은 그대로, 스피너 + 글자, 눌리지 않음
+///   (키보드 포커스는 그대로 남아서, 처리가 끝나면 바로 다시 누를 수 있음)
 /// - `expand: true` → 가로로 꽉 채움
 class AppButton extends StatefulWidget {
   const AppButton(
@@ -113,6 +114,7 @@ class AppButton extends StatefulWidget {
   final AppButtonVariant variant;
 
   /// 처리 중일 때 `true`. 스피너가 돌고 눌리지 않습니다.
+  /// 키보드 포커스는 빼앗지 않습니다.
   final bool loading;
 
   /// `false` 면 비활성 버튼이 됩니다.
@@ -154,9 +156,12 @@ class _AppButtonState extends State<AppButton> {
   bool get _disabled =>
       !widget.loading && (!widget.enabled || widget.onPressed == null);
 
-  /// 지금 누를 수 있는지
-  bool get _interactive =>
-      widget.enabled && widget.onPressed != null && !widget.loading;
+  /// 키보드 포커스를 받을 수 있는지.
+  /// 로딩 중에도 `true` 라서 포커스가 다른 곳으로 튀지 않습니다.
+  bool get _focusable => widget.enabled && widget.onPressed != null;
+
+  /// 지금 누를 수 있는지 (포커스는 받을 수 있지만 로딩 중이면 못 누름)
+  bool get _interactive => _focusable && !widget.loading;
 
   @override
   void didUpdateWidget(AppButton oldWidget) {
@@ -271,7 +276,9 @@ class _AppButtonState extends State<AppButton> {
       value: widget.loading ? '처리 중' : null,
       liveRegion: widget.loading,
       child: FocusableActionDetector(
-        enabled: _interactive,
+        // 로딩 중에도 켜 둬서 포커스를 유지합니다. 누르기(Enter/Space)는
+        // _handleTap 에서 _interactive 를 확인해 무시합니다.
+        enabled: _focusable,
         mouseCursor: _interactive
             ? SystemMouseCursors.click
             : SystemMouseCursors.basic,
@@ -292,7 +299,7 @@ class _AppButtonState extends State<AppButton> {
               clipBehavior: Clip.none,
               children: [
                 surface,
-                if (_showFocusRing && _interactive)
+                if (_showFocusRing && _focusable)
                   Positioned(
                     left: -ringOutset,
                     top: -ringOutset,

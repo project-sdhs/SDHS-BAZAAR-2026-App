@@ -269,6 +269,46 @@ void main() {
       expect(taps, 1);
     });
 
+    testWidgets('loading 으로 바뀌어도 키보드 포커스는 남고, Enter 는 무시한다', (tester) async {
+      FocusManager.instance.highlightStrategy =
+          FocusHighlightStrategy.alwaysTraditional;
+      addTearDown(
+        () => FocusManager.instance.highlightStrategy =
+            FocusHighlightStrategy.automatic,
+      );
+
+      var taps = 0;
+      Widget button({required bool loading}) =>
+          _wrap(AppButton('결제하기', loading: loading, onPressed: () => taps++));
+      bool buttonHasFocus() =>
+          Focus.of(tester.element(find.byKey(AppButton.surfaceKey)))
+              .hasPrimaryFocus;
+
+      await tester.pumpWidget(button(loading: false));
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(buttonHasFocus(), isTrue);
+
+      // 처리 중으로 바뀜: 포커스와 포커스 링은 그대로
+      await tester.pumpWidget(button(loading: true));
+      await tester.pump();
+      expect(buttonHasFocus(), isTrue);
+      expect(find.byKey(AppButton.focusRingKey), findsOneWidget);
+
+      // 처리 중에는 Enter 를 눌러도 실행되지 않습니다.
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(taps, 0);
+
+      // 처리가 끝나면 다시 Tab 하지 않아도 바로 Enter 로 누를 수 있습니다.
+      await tester.pumpWidget(button(loading: false));
+      await tester.pump();
+      expect(buttonHasFocus(), isTrue);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(taps, 1);
+    });
+
     testWidgets('icon 을 주면 글자 앞에 아이콘이 보인다', (tester) async {
       await tester.pumpWidget(
         _wrap(
