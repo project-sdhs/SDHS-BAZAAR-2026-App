@@ -189,9 +189,13 @@ class _StepRow extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  // 17 · 600. 줄 높이는 캔버스의 CSS `normal`(Pretendard 약 1.2)에
+                  // 맞춰 직접 적습니다. 안 적으면 테마의 1.5 를 물려받아 줄이 벌어집니다.
                   style: const TextStyle(
                     fontFamily: AppTypography.fontFamily,
                     fontSize: 17,
+                    height: 1.2,
+                    leadingDistribution: TextLeadingDistribution.even,
                     fontWeight: FontWeight.w600,
                     color: AppColors.foreground,
                   ),

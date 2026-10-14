@@ -44,6 +44,21 @@ void main() {
     expect(find.textContaining(RegExp(r'\d{4}')), findsNothing);
   });
 
+  testWidgets('단계 제목은 17 크기, 줄 높이 1.2 (테마의 1.5 를 물려받지 않음)', (tester) async {
+    await _pumpOnboarding(tester);
+
+    for (final step in OnboardingPage.steps) {
+      final title = find.text(step.title);
+      final style = tester.widget<Text>(title).style!;
+      expect(style.fontSize, 17);
+      expect(style.height, 1.2);
+      // 한 줄짜리 제목이므로 그려진 높이 ≈ 17 × 1.2 = 20.4
+      // (테스트 환경의 글꼴 계산 오차를 고려해 ±0.5 를 허용합니다.
+      //  테마의 1.5 를 물려받으면 약 25.5 라서 여기서 걸립니다)
+      expect(tester.getSize(title).height, closeTo(17 * 1.2, 0.5));
+    }
+  });
+
   testWidgets('일러스트 자리: 가로 꽉 참, 높이 160, 라디우스 16', (tester) async {
     await _pumpOnboarding(tester);
 
