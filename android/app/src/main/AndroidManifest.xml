@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 릴리스 빌드에서도 서버(API)와 통신하려면 인터넷 권한이 필요합니다.
+         (debug/profile 매니페스트에만 있으면 릴리스 앱은 네트워크를 못 씁니다) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="디지텍 바자회"
         android:name="${applicationName}"
