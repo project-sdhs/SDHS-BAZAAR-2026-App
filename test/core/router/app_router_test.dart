@@ -64,10 +64,7 @@ void main() {
     expect(_tabBar, findsOneWidget);
     for (final label in ['홈', '부스', 'QR 결제', '지도', '마이']) {
       expect(
-        find.descendant(
-          of: _tabBar,
-          matching: find.text(label),
-        ),
+        find.descendant(of: _tabBar, matching: find.text(label)),
         findsOneWidget,
       );
     }
@@ -86,10 +83,7 @@ void main() {
     };
     for (final MapEntry(key: label, value: path) in tabs.entries) {
       await tester.tap(
-        find.descendant(
-          of: _tabBar,
-          matching: find.text(label),
-        ),
+        find.descendant(of: _tabBar, matching: find.text(label)),
       );
       await tester.pumpAndSettle();
       expect(_location(tester), path, reason: '$label 탭');
