@@ -7,7 +7,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../components/buttons/buttons.dart';
 
-/// 버튼 카탈로그 (개발용, 디버그 빌드에서만 `/dev/buttons` 로 열림).
+/// 버튼 카탈로그 (개발용, 현재 앱 라우터에는 등록되지 않습니다).
 ///
 /// 버튼의 크기 · 변형 · 상태를 한 화면에서 눈으로 확인할 때 씁니다.
 class ButtonCatalogPage extends StatefulWidget {

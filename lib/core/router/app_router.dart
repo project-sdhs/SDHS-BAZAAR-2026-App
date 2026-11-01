@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../ui/pages/booths/booths_page.dart';
-import '../../ui/pages/dev/button_catalog_page.dart';
+import '../../ui/pages/dev/input_feedback_catalog_page.dart';
 import '../../ui/pages/home/home_page.dart';
 import '../../ui/pages/login/login_page.dart';
 import '../../ui/pages/map/map_page.dart';
@@ -82,8 +82,8 @@ GoRouter createAppRouter({String? initialLocation}) {
       // 개발용 화면은 디버그 빌드에서만 등록합니다.
       if (kDebugMode)
         GoRoute(
-          path: Routes.devButtons,
-          builder: (context, state) => const ButtonCatalogPage(),
+          path: Routes.devInputFeedback,
+          builder: (context, state) => const InputFeedbackCatalogPage(),
         ),
     ],
   );
