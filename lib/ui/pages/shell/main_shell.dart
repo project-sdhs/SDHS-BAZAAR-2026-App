@@ -18,6 +18,7 @@ class MainShell extends StatelessWidget {
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: _BottomTabBar(
+        key: const Key('bottomTabBar'),
         currentIndex: navigationShell.currentIndex,
         onTabSelected: _onTap,
       ),
@@ -27,6 +28,7 @@ class MainShell extends StatelessWidget {
 
 class _BottomTabBar extends StatelessWidget {
   const _BottomTabBar({
+    super.key,
     required this.currentIndex,
     required this.onTabSelected,
   });

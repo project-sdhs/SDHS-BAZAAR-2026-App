@@ -16,6 +16,9 @@ String _location(WidgetTester tester) {
   return GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
 }
 
+/// 하단 탭 바 (MainShell 의 `Key('bottomTabBar')`)
+final _tabBar = find.byKey(const Key('bottomTabBar'));
+
 void main() {
   testWidgets('앱은 온보딩에서 시작한다', (tester) async {
     await tester.pumpWidget(const BazaarApp());
@@ -58,12 +61,11 @@ void main() {
     expect(find.byType(MainShell), findsOneWidget);
     expect(_location(tester), Routes.home);
 
-    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(bar.destinations, hasLength(5));
+    expect(_tabBar, findsOneWidget);
     for (final label in ['홈', '부스', 'QR 결제', '지도', '마이']) {
       expect(
         find.descendant(
-          of: find.byType(NavigationBar),
+          of: _tabBar,
           matching: find.text(label),
         ),
         findsOneWidget,
@@ -85,7 +87,7 @@ void main() {
     for (final MapEntry(key: label, value: path) in tabs.entries) {
       await tester.tap(
         find.descendant(
-          of: find.byType(NavigationBar),
+          of: _tabBar,
           matching: find.text(label),
         ),
       );
