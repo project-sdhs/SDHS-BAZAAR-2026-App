@@ -91,6 +91,45 @@ void main() {
     expect(find.byType(BoothsPage, skipOffstage: false), findsOneWidget);
   });
 
+  testWidgets('스크린리더는 탭을 버튼으로 읽고 선택된 탭을 알 수 있다', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(const BazaarApp(initialLocation: Routes.home));
+    await tester.pumpAndSettle();
+
+    for (final label in ['홈', '부스', 'QR 결제', '지도', '마이']) {
+      expect(
+        find.descendant(of: _tabBar, matching: find.bySemanticsLabel(label)),
+        findsOneWidget,
+        reason: '$label 은 한 번만 읽혀야 한다',
+      );
+    }
+
+    expect(
+      tester.getSemantics(
+        find.descendant(of: _tabBar, matching: find.bySemanticsLabel('홈')),
+      ),
+      matchesSemantics(
+        label: '홈',
+        isButton: true,
+        hasSelectedState: true,
+        isSelected: true,
+        hasTapAction: true,
+      ),
+    );
+    expect(
+      tester.getSemantics(
+        find.descendant(of: _tabBar, matching: find.bySemanticsLabel('QR 결제')),
+      ),
+      matchesSemantics(
+        label: 'QR 결제',
+        isButton: true,
+        hasSelectedState: true,
+        hasTapAction: true,
+      ),
+    );
+    semantics.dispose();
+  });
+
   testWidgets('디버그 빌드에서는 /dev/buttons 카탈로그가 열린다', (tester) async {
     await tester.pumpWidget(
       const BazaarApp(initialLocation: Routes.devButtons),
