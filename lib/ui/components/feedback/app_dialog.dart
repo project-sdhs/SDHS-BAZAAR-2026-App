@@ -22,7 +22,11 @@ abstract final class AppDialog {
       builder: (dialogContext) => AlertDialog(
         title: Text(
           title,
-          style: AppTypography.h4.copyWith(color: AppColors.foreground),
+          style: AppTypography.body.copyWith(
+            color: AppColors.foreground,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         content: Text(
           message,
@@ -40,7 +44,7 @@ abstract final class AppDialog {
               Expanded(
                 child: AppButton(
                   cancelLabel,
-                  size: AppButtonSize.medium,
+                  size: AppButtonSize.large,
                   variant: AppButtonVariant.light,
                   expand: true,
                   onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -50,7 +54,7 @@ abstract final class AppDialog {
               Expanded(
                 child: AppButton(
                   confirmLabel,
-                  size: AppButtonSize.medium,
+                  size: AppButtonSize.large,
                   variant: confirmVariant,
                   expand: true,
                   onPressed: () => Navigator.of(dialogContext).pop(true),

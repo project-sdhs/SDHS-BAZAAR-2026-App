@@ -13,11 +13,37 @@ abstract final class AppBottomSheet {
   }) {
     return showModalBottomSheet<T>(
       context: context,
-      builder: builder,
+      builder: (sheetContext) => Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.s16),
+            child: builder(sheetContext),
+          ),
+          Positioned(
+            top: AppSpacing.s8,
+            left: 0,
+            right: 0,
+            child: ExcludeSemantics(
+              child: Center(
+                child: Container(
+                  key: const ValueKey('AppBottomSheet.dragHandle'),
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       isScrollControlled: isScrollControlled,
       isDismissible: isDismissible,
       useSafeArea: true,
-      showDragHandle: true,
+      showDragHandle: false,
+      enableDrag: true,
       backgroundColor: AppColors.canvas,
       elevation: 0,
       shape: const RoundedRectangleBorder(

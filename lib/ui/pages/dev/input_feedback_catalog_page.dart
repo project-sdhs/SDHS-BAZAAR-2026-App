@@ -35,7 +35,7 @@ class _InputFeedbackCatalogPageState extends State<InputFeedbackCatalogPage> {
         children: [
           const _Section('빈 상태'),
           const SizedBox(
-            height: 220,
+            height: 260,
             child: AppEmptyState(
               title: '검색 결과가 없어요',
               message: '반 번호(예: 2-3)나 메뉴 이름으로\n다시 검색해 보세요',
@@ -84,11 +84,12 @@ class _InputFeedbackCatalogPageState extends State<InputFeedbackCatalogPage> {
           const _Section('텍스트 필드'),
           const _FieldExample(
             label: 'box · 기본',
-            field: AppTextField(hintText: '이름을 입력하세요'),
+            field: AppTextField(label: '이름', hintText: '이름을 입력하세요'),
           ),
           const _FieldExample(
             label: 'box · 오류',
             field: AppTextField(
+              label: '학번',
               initialValue: '22-5',
               errorText: '학번은 숫자 4자리로 입력해 주세요.',
             ),
@@ -96,6 +97,7 @@ class _InputFeedbackCatalogPageState extends State<InputFeedbackCatalogPage> {
           const _FieldExample(
             label: 'line',
             field: AppTextField(
+              label: '메뉴명',
               initialValue: '타코야끼',
               variant: AppTextFieldVariant.line,
             ),
@@ -103,20 +105,26 @@ class _InputFeedbackCatalogPageState extends State<InputFeedbackCatalogPage> {
           const _FieldExample(
             label: 'hero · 금액',
             field: AppTextField(
+              label: '충전 금액',
               initialValue: '10,000',
               variant: AppTextFieldVariant.hero,
               keyboardType: TextInputType.number,
               textAlign: TextAlign.end,
-              creditSuffix: true,
+              suffix: SizedBox(width: 48),
             ),
           ),
           const _FieldExample(
             label: '비활성',
-            field: AppTextField(initialValue: '2학년 3반', enabled: false),
+            field: AppTextField(
+              label: '학급',
+              initialValue: '2학년 3반',
+              enabled: false,
+            ),
           ),
           const _Section('검색 필드'),
           AppSearchField(
             controller: _searchController,
+            label: '부스 검색',
             hintText: '반 · 부스 · 메뉴 검색',
             onChanged: (value) => setState(() => _searchText = value),
           ),

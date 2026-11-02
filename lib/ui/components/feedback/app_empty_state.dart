@@ -30,34 +30,57 @@ class AppEmptyState extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.s24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 40, color: AppColors.muted),
-            const SizedBox(height: AppSpacing.s16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: AppTypography.h4.copyWith(color: AppColors.foreground),
-            ),
-            if (message != null) ...[
-              const SizedBox(height: AppSpacing.s8),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.s24),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.r16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppColors.canvas,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 26, color: AppColors.muted),
+              ),
+              const SizedBox(height: AppSpacing.s16),
               Text(
-                message!,
+                title,
                 textAlign: TextAlign.center,
-                style: AppTypography.body.copyWith(color: AppColors.body),
+                style: AppTypography.body.copyWith(
+                  color: AppColors.foreground,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
+              if (message != null) ...[
+                const SizedBox(height: AppSpacing.s8),
+                Text(
+                  message!,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.muted,
+                  ),
+                ),
+              ],
+              if (actionLabel case final label?) ...[
+                const SizedBox(height: AppSpacing.s24),
+                AppButton(
+                  label,
+                  size: AppButtonSize.medium,
+                  variant: AppButtonVariant.light,
+                  onPressed: onAction,
+                ),
+              ],
             ],
-            if (actionLabel case final label?) ...[
-              const SizedBox(height: AppSpacing.s24),
-              AppButton(
-                label,
-                size: AppButtonSize.medium,
-                variant: AppButtonVariant.light,
-                onPressed: onAction,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

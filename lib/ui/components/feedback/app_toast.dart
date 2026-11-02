@@ -15,6 +15,8 @@ abstract final class AppToast {
     Duration duration = const Duration(seconds: 3),
   }) {
     final messenger = ScaffoldMessenger.of(context);
+    final isError = type == AppToastType.error;
+    final foregroundColor = isError ? AppColors.danger : AppColors.onPrimary;
     messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -22,29 +24,27 @@ abstract final class AppToast {
           content: Row(
             children: [
               Icon(
-                type == AppToastType.success ? Icons.check_circle : Icons.error,
-                color: AppColors.onPrimary,
+                isError ? Icons.error : Icons.check_circle,
+                color: foregroundColor,
                 size: 20,
               ),
               const SizedBox(width: AppSpacing.s8),
               Expanded(
                 child: Text(
                   message,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.onPrimary,
-                  ),
+                  style: AppTypography.body.copyWith(color: foregroundColor),
                 ),
               ),
             ],
           ),
           duration: duration,
           behavior: SnackBarBehavior.floating,
-          backgroundColor: type == AppToastType.success
-              ? AppColors.foreground
-              : AppColors.danger,
+          backgroundColor: isError
+              ? AppColors.dangerWeak
+              : AppColors.foreground,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.r10),
+            borderRadius: BorderRadius.circular(AppRadius.r14),
           ),
         ),
       );

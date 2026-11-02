@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import 'app_text_field.dart';
 
 /// 검색 입력과 입력 지우기 동작을 제공하는 필드.
@@ -8,6 +8,7 @@ class AppSearchField extends StatefulWidget {
   const AppSearchField({
     super.key,
     this.controller,
+    this.label,
     this.hintText = '검색어를 입력하세요',
     this.onChanged,
     this.onSubmitted,
@@ -15,6 +16,7 @@ class AppSearchField extends StatefulWidget {
   });
 
   final TextEditingController? controller;
+  final String? label;
   final String hintText;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
@@ -61,27 +63,27 @@ class _AppSearchFieldState extends State<AppSearchField> {
 
   @override
   Widget build(BuildContext context) {
+    final hasText = _controller.text.isNotEmpty;
     return AppTextField(
-      semanticLabel: '검색',
+      semanticLabel: widget.label ?? '검색',
       controller: _controller,
+      label: widget.label,
       hintText: widget.hintText,
       enabled: widget.enabled,
+      borderRadius: AppRadius.r16,
       textInputAction: TextInputAction.search,
       onChanged: widget.onChanged,
       onSubmitted: widget.onSubmitted,
       prefixIcon: Icons.search,
-      suffix: _controller.text.isEmpty
-          ? null
-          : IconButton(
-              tooltip: '검색어 지우기',
-              onPressed: widget.enabled
-                  ? () {
-                      _controller.clear();
-                      widget.onChanged?.call('');
-                    }
-                  : null,
-              icon: const Icon(Icons.close, color: AppColors.muted),
-            ),
+      prefixIconSize: 24,
+      suffixIcon: hasText ? Icons.cancel : null,
+      suffixIconTooltip: hasText ? '검색어 지우기' : null,
+      onSuffixIconPressed: hasText ? _clearSearch : null,
     );
+  }
+
+  void _clearSearch() {
+    _controller.clear();
+    widget.onChanged?.call('');
   }
 }
