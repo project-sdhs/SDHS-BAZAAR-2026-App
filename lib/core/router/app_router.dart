@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../ui/pages/booths/booths_page.dart';
 import '../../ui/pages/dev/button_catalog_page.dart';
 import '../../ui/pages/dev/basic_catalog_page.dart';
+import '../../ui/pages/dev/input_feedback_catalog_page.dart';
 import '../../ui/pages/home/home_page.dart';
 import '../../ui/pages/login/login_page.dart';
 import '../../ui/pages/map/map_page.dart';
@@ -90,6 +91,11 @@ GoRouter createAppRouter({String? initialLocation}) {
         GoRoute(
           path: Routes.devButtons,
           builder: (context, state) => const ButtonCatalogPage(),
+        ),
+      if (kDebugMode)
+        GoRoute(
+          path: Routes.devInputFeedback,
+          builder: (context, state) => const InputFeedbackCatalogPage(),
         ),
     ],
   );

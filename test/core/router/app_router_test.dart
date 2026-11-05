@@ -2,6 +2,7 @@ import 'package:bazaar_app/app.dart';
 import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/ui/pages/booths/booths_page.dart';
 import 'package:bazaar_app/ui/pages/dev/button_catalog_page.dart';
+import 'package:bazaar_app/ui/pages/dev/input_feedback_catalog_page.dart';
 import 'package:bazaar_app/ui/pages/home/home_page.dart';
 import 'package:bazaar_app/ui/pages/login/login_page.dart';
 import 'package:bazaar_app/ui/pages/onboarding/onboarding_page.dart';
@@ -95,10 +96,32 @@ void main() {
     expect(find.byType(BoothsPage, skipOffstage: false), findsOneWidget);
   });
 
-  testWidgets('디버그 빌드에서는 /dev/buttons 카탈로그가 열린다', (tester) async {
+  testWidgets('디버그 빌드에서는 /dev/input-feedback 카탈로그가 열린다', (tester) async {
+    await tester.pumpWidget(
+      const BazaarApp(initialLocation: Routes.devInputFeedback),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(InputFeedbackCatalogPage), findsOneWidget);
+  });
+
+  testWidgets('디버그 빌드에서 버튼 카탈로그 경로가 열린다', (tester) async {
     await tester.pumpWidget(
       const BazaarApp(initialLocation: Routes.devButtons),
     );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ButtonCatalogPage), findsOneWidget);
+  });
+
+  testWidgets('로그인 화면에서 두 개발 카탈로그에 모두 들어갈 수 있다', (tester) async {
+    await tester.pumpWidget(const BazaarApp(initialLocation: Routes.login));
+    await tester.pumpAndSettle();
+
+    expect(find.text('버튼 카탈로그 (개발용)'), findsOneWidget);
+    expect(find.text('입력 · 피드백 카탈로그 (개발용)'), findsOneWidget);
+
+    await tester.tap(find.text('버튼 카탈로그 (개발용)'));
     await tester.pumpAndSettle();
 
     expect(find.byType(ButtonCatalogPage), findsOneWidget);

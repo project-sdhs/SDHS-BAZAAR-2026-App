@@ -36,6 +36,12 @@ class LoginPage extends StatelessWidget {
                   variant: AppButtonVariant.light,
                   onPressed: () => context.push(Routes.devButtons),
                 ),
+                const SizedBox(height: AppSpacing.s8),
+                AppButton(
+                  '입력 · 피드백 카탈로그 (개발용)',
+                  variant: AppButtonVariant.light,
+                  onPressed: () => context.push(Routes.devInputFeedback),
+                ),
               ],
             ],
           ),
