@@ -17,6 +17,9 @@ String _location(WidgetTester tester) {
   return GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
 }
 
+/// 하단 탭 바 (MainShell 의 `Key('bottomTabBar')`)
+final _tabBar = find.byKey(const Key('bottomTabBar'));
+
 void main() {
   testWidgets('앱은 온보딩에서 시작한다', (tester) async {
     await tester.pumpWidget(const BazaarApp());
@@ -59,14 +62,10 @@ void main() {
     expect(find.byType(MainShell), findsOneWidget);
     expect(_location(tester), Routes.home);
 
-    final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
-    expect(bar.destinations, hasLength(5));
+    expect(_tabBar, findsOneWidget);
     for (final label in ['홈', '부스', 'QR 결제', '지도', '마이']) {
       expect(
-        find.descendant(
-          of: find.byType(NavigationBar),
-          matching: find.text(label),
-        ),
+        find.descendant(of: _tabBar, matching: find.text(label)),
         findsOneWidget,
       );
     }
@@ -85,15 +84,51 @@ void main() {
     };
     for (final MapEntry(key: label, value: path) in tabs.entries) {
       await tester.tap(
-        find.descendant(
-          of: find.byType(NavigationBar),
-          matching: find.text(label),
-        ),
+        find.descendant(of: _tabBar, matching: find.text(label)),
       );
       await tester.pumpAndSettle();
       expect(_location(tester), path, reason: '$label 탭');
     }
     expect(find.byType(BoothsPage, skipOffstage: false), findsOneWidget);
+  });
+
+  testWidgets('스크린리더는 탭을 버튼으로 읽고 선택된 탭을 알 수 있다', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(const BazaarApp(initialLocation: Routes.home));
+    await tester.pumpAndSettle();
+
+    for (final label in ['홈', '부스', 'QR 결제', '지도', '마이']) {
+      expect(
+        find.descendant(of: _tabBar, matching: find.bySemanticsLabel(label)),
+        findsOneWidget,
+        reason: '$label 은 한 번만 읽혀야 한다',
+      );
+    }
+
+    expect(
+      tester.getSemantics(
+        find.descendant(of: _tabBar, matching: find.bySemanticsLabel('홈')),
+      ),
+      matchesSemantics(
+        label: '홈',
+        isButton: true,
+        hasSelectedState: true,
+        isSelected: true,
+        hasTapAction: true,
+      ),
+    );
+    expect(
+      tester.getSemantics(
+        find.descendant(of: _tabBar, matching: find.bySemanticsLabel('QR 결제')),
+      ),
+      matchesSemantics(
+        label: 'QR 결제',
+        isButton: true,
+        hasSelectedState: true,
+        hasTapAction: true,
+      ),
+    );
+    semantics.dispose();
   });
 
   testWidgets('디버그 빌드에서는 /dev/input-feedback 카탈로그가 열린다', (tester) async {

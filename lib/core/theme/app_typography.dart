@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// 타입 롤 6종 (Pretendard).
+/// 타입 롤 7종 (Pretendard).
 ///
 /// 디자인의 `36 / 54` 는 글자 크기 36, 줄 높이 54 라는 뜻입니다.
 /// Flutter 의 `height` 는 배수라서 `54 / 36` 처럼 나눠서 적습니다.
@@ -66,6 +66,15 @@ abstract final class AppTypography {
     fontSize: 14,
     height: 21 / 14,
     fontWeight: FontWeight.w400,
+    leadingDistribution: TextLeadingDistribution.even,
+  );
+
+  /// 12 / 18 · 500 — 하단 탭 라벨 등 작은 글자
+  static const TextStyle caption = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 12,
+    height: 18 / 12,
+    fontWeight: FontWeight.w500,
     leadingDistribution: TextLeadingDistribution.even,
   );
 }
