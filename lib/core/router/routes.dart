@@ -15,4 +15,5 @@ abstract final class Routes {
 
   /// 버튼 카탈로그 (디버그 빌드에서만 등록됩니다)
   static const String devButtons = '/dev/buttons';
+  static const String devBasics = '/dev/basics';
 }
