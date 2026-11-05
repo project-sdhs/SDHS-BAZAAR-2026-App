@@ -4,11 +4,18 @@ import '../../../core/theme/app_colors.dart';
 
 /// 응답을 기다리는 동안 보이는 정적인 자리 표시. 임의의 모션은 추가하지 않습니다.
 class AppSkeleton extends StatelessWidget {
-  const AppSkeleton({super.key, this.width, this.height = 14, this.radius = 6});
+  const AppSkeleton({
+    super.key,
+    this.width,
+    this.height = 14,
+    this.radius = 6,
+    this.color = AppColors.placeholder,
+  });
 
   final double? width;
   final double height;
   final double radius;
+  final Color color;
 
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
@@ -16,7 +23,7 @@ class AppSkeleton extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.placeholder,
+        color: color,
         borderRadius: BorderRadius.circular(radius),
       ),
     ),
@@ -54,7 +61,7 @@ class AppSkeletonList extends StatelessWidget {
                       const SizedBox(height: 8),
                       const FractionallySizedBox(
                         widthFactor: .88,
-                        child: AppSkeleton(),
+                        child: AppSkeleton(color: AppColors.surface),
                       ),
                     ],
                   ),

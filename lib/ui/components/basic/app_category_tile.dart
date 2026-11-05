@@ -50,6 +50,7 @@ class AppCategoryTile extends StatelessWidget {
               Text(
                 label!,
                 style: AppTypography.bodySmall.copyWith(
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
                   color: AppColors.foreground,
                 ),

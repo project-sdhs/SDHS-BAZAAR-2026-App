@@ -25,6 +25,7 @@ class AppSegmentedControl<T extends Object> extends StatelessWidget {
     child: Padding(
       padding: const EdgeInsets.all(4),
       child: Row(
+        spacing: 4,
         children: [
           for (final item in items.entries)
             Expanded(
@@ -49,7 +50,10 @@ class AppSegmentedControl<T extends Object> extends StatelessWidget {
                         item.value,
                         textAlign: TextAlign.center,
                         style: AppTypography.bodySmall.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          fontWeight: item.key == value
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                           color: onChanged == null
                               ? AppColors.muted
                               : item.key == value

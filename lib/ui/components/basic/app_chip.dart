@@ -29,6 +29,7 @@ class AppChip extends StatelessWidget {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
     labelStyle: AppTypography.bodySmall.copyWith(
+      fontSize: 15,
       fontWeight: FontWeight.w600,
       color: onSelected == null
           ? AppColors.muted

@@ -8,7 +8,7 @@ class AppAvatar extends StatelessWidget {
   const AppAvatar({
     super.key,
     required this.name,
-    this.size = 48,
+    this.size = 52,
     this.highlighted = false,
   });
 
@@ -40,8 +40,8 @@ class AppAvatar extends StatelessWidget {
               : Text(
                   trimmed.characters.first,
                   style: AppTypography.body.copyWith(
-                    fontSize: size * .4,
-                    fontWeight: FontWeight.w600,
+                    fontSize: size * 20 / 52,
+                    fontWeight: FontWeight.w700,
                     color: highlighted
                         ? AppColors.weakForeground
                         : AppColors.body,

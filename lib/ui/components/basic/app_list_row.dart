@@ -39,12 +39,13 @@ class AppListRow extends StatelessWidget {
                   Text(
                     title,
                     style: AppTypography.body.copyWith(
+                      fontSize: 17,
                       fontWeight: FontWeight.w600,
                       color: AppColors.foreground,
                     ),
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle!,
                       style: AppTypography.bodySmall.copyWith(
