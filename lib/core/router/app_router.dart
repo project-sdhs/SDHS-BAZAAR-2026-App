@@ -26,7 +26,7 @@ GoRouter createAppRouter({String? initialLocation}) {
     routes: [
       GoRoute(
         path: Routes.onboarding,
-        // [뒤로 이동 수정] 플랫폼 기본 페이지 전환을 명시합니다.
+        // [뒤로 이동 수정] 플랫폼 기본 페이지 전환을 명시
         pageBuilder: (context, state) => MaterialPage<void>(
           key: state.pageKey,
           child: const OnboardingPage(),
@@ -34,18 +34,16 @@ GoRouter createAppRouter({String? initialLocation}) {
       ),
       GoRoute(
         path: Routes.login,
-        // [뒤로 이동 수정] iOS에서 가장자리 스와이프를 지원합니다.
+        // [뒤로 이동 수정] iOS에서 가장자리 스와이프를 지원
         pageBuilder: (context, state) =>
             MaterialPage<void>(key: state.pageKey, child: const LoginPage()),
       ),
 
       // 하단 탭 5개. 탭마다 화면 기록(스택)을 따로 기억합니다.
       StatefulShellRoute.indexedStack(
-        // [뒤로 이동 수정] 하단 탭 전체에서도 이전 로그인 화면으로 스와이프합니다.
-        pageBuilder: (context, state, navigationShell) => MaterialPage<void>(
-          key: state.pageKey,
-          child: MainShell(navigationShell: navigationShell),
-        ),
+        // [리뷰 2] 탭 첫 화면은 로그인으로 돌아가지 않으므로 별도 MaterialPage 감싸기를 제거
+        builder: (context, state, navigationShell) =>
+            MainShell(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(
             routes: [

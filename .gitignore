@@ -75,3 +75,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# [리뷰 5] Windows 폴더 설정 파일은 소스에 포함하지 않습니다.
+[Dd]esktop.ini

@@ -20,7 +20,7 @@ dependencies:
   provider: ^6.1.5+1
   # 서버 통신 (lib/data/api)
   http: ^1.6.0
-  share_plus: ^13.3.1
+  # [리뷰 4] 공유 버튼은 콜백만 받습니다. 실제 공유 패키지는 부스 상세 구현 시 추가합니다.
 
 dev_dependencies:
   flutter_test:

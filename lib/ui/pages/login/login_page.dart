@@ -19,18 +19,19 @@ class LoginPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // [뒤로 이동 수정] 기존 제목/설명을 상단바로 표시합니다.
-            // 상단바에 여백이 있으므로 버튼 영역에만 별도 여백을 줍니다.
-            // const AppTopBar(title: '얼마를 충전할까요?', description: '계좌이체하면 바로 크레딧이 들어와요'),
+            // [뒤로 이동 수정] 기존 제목/설명을 상단바로 표시
+            // 상단바에 여백이 있으므로 버튼 영역에만 별도 여백
+            // [리뷰 1] 상단바 주석을 해제하고 원래 로그인 문구를 복구
+            const AppTopBar(title: '로그인', description: '준비 중'),
             Padding(
               padding: const EdgeInsets.all(AppSpacing.s16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // [뒤로 이동 수정] 홈에서도 로그인으로 돌아갈 수 있게 기록을 남깁니다.
+                  // [리뷰 2] 로그인 완료 후 뒤로 가도 로그인으로 돌아오지 않도록 기록을 교체
                   AppButton(
                     '홈으로 (임시)',
-                    onPressed: () => context.push(Routes.home),
+                    onPressed: () => context.go(Routes.home),
                   ),
                   if (kDebugMode) ...[
                     const SizedBox(height: AppSpacing.s8),
