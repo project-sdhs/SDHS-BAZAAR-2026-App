@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 
 enum CreditAmountType { tile, frame, body, caption }
 
 enum CreditAmountTone {
-  normal(Color(0xFF191F28)),
-  secondary(Color(0xFF4E5968)),
-  muted(Color(0xFF8B95A1)),
-  charge(Color(0xFF0171CE)),
-  danger(Color(0xFFF42939));
+  normal(AppColors.foreground),
+  secondary(AppColors.body),
+  muted(AppColors.muted),
+  charge(AppColors.primary),
+  danger(AppColors.danger);
 
   const CreditAmountTone(this.color);
   final Color color;
 }
 
-class CreditAmount extends StatelessWidget {
-  const CreditAmount({
+class AppCreditAmount extends StatelessWidget {
+  const AppCreditAmount({
     super.key,
     required this.amount,
     this.type = CreditAmountType.body,
@@ -27,6 +28,10 @@ class CreditAmount extends StatelessWidget {
     this.showPlus = false,
     this.color,
     this.coin,
+    this.fontWeight,
+    this.prefix = '',
+    this.suffix = '',
+    this.showCoin = true,
   }) : assert(fontSize == null || fontSize > 0),
        assert(coinSize == null || coinSize > 0),
        assert(gap == null || gap >= 0);
@@ -41,7 +46,14 @@ class CreditAmount extends StatelessWidget {
   final Color? color;
   final Widget? coin;
 
-  String get formattedAmount {
+  final FontWeight? fontWeight;
+  final String prefix;
+  final String suffix;
+  final bool showCoin;
+
+  String get formattedAmount => format(amount, showPlus: showPlus);
+
+  static String format(int amount, {bool showPlus = false}) {
     final digits = amount.abs().toString().replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
       (match) => '${match[1]},',
@@ -83,56 +95,53 @@ class CreditAmount extends StatelessWidget {
           CreditAmountType.caption => size * 0.14,
         };
 
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(text: formattedAmount),
-          WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: Padding(
-              padding: EdgeInsets.only(left: spacing),
-              child: SizedBox.square(
-                dimension: iconSize,
-                child:
-                    coin ??
-                    DecoratedBox(
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFF9D00),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          'C',
-                          textScaler: TextScaler.noScaling,
-                          style: TextStyle(
-                            fontSize: iconSize * 0.7,
-                            fontFamily: 'Arial',
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            height: 1,
-                          ),
-                        ),
-                      ),
+    final amountStyle = TextStyle(
+      fontFamily: AppTypography.fontFamily,
+      fontSize: size,
+      fontWeight:
+          fontWeight ??
+          (type == CreditAmountType.caption
+              ? FontWeight.w400
+              : FontWeight.w700),
+      color: color ?? tone.color,
+      letterSpacing: switch (type) {
+        CreditAmountType.tile => -size * 0.02,
+        CreditAmountType.frame => -size * 0.01,
+        _ => 0,
+      },
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+    final formatted = formattedAmount;
+    return Semantics(
+      label: '$prefix$formatted 크레딧$suffix',
+      excludeSemantics: true,
+      child: Text.rich(
+        TextSpan(
+          children: [
+            if (prefix.isNotEmpty) TextSpan(text: prefix),
+            TextSpan(text: formatted, style: amountStyle),
+            if (showCoin)
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: spacing,
+                    right: suffix.isEmpty ? 0 : size * 0.1,
+                  ),
+                  child: SizedBox.square(
+                    dimension: iconSize,
+                    child: Opacity(
+                      opacity: tone == CreditAmountTone.muted ? 0.4 : 1,
+                      child:
+                          coin ?? Image.asset('assets/images/credit_coin.png'),
                     ),
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
-      ),
-      semanticsLabel: '$formattedAmount \uD06C\uB808\uB527',
-      style: TextStyle(
-        fontFamily: AppTypography.fontFamily,
-        fontSize: size,
-        fontWeight: type == CreditAmountType.caption
-            ? FontWeight.w400
-            : FontWeight.w700,
-        color: color ?? tone.color,
-        letterSpacing: type == CreditAmountType.tile
-            ? -size * 0.02
-            : type == CreditAmountType.frame
-            ? -size * 0.01
-            : 0,
-        fontFeatures: const [FontFeature.tabularFigures()],
+            if (suffix.isNotEmpty) TextSpan(text: suffix),
+          ],
+        ),
       ),
     );
   }
