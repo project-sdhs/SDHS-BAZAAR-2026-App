@@ -11,10 +11,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-/// 지금 라우터가 가리키는 경로
+// 지금 라우터가 가리키는 경로
 String _location(WidgetTester tester) {
   final context = tester.element(find.byType(Navigator).first);
-  return GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
+  // [뒤로 이동 수정] push로 추가된 최상단 화면의 경로를 확인합니다.
+  return GoRouter.of(context).state.uri.path;
 }
 
 /// 하단 탭 바 (MainShell 의 `Key('bottomTabBar')`)

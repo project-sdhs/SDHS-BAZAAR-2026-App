@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+// [뒤로 이동 추가] iOS 가장자리 스와이프를 지원하는 기본 페이지입니다.
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../ui/pages/booths/booths_page.dart';
@@ -26,15 +28,22 @@ GoRouter createAppRouter({String? initialLocation}) {
     routes: [
       GoRoute(
         path: Routes.onboarding,
-        builder: (context, state) => const OnboardingPage(),
+        // [뒤로 이동 수정] 플랫폼 기본 페이지 전환을 명시
+        pageBuilder: (context, state) => MaterialPage<void>(
+          key: state.pageKey,
+          child: const OnboardingPage(),
+        ),
       ),
       GoRoute(
         path: Routes.login,
-        builder: (context, state) => const LoginPage(),
+        // [뒤로 이동 수정] iOS에서 가장자리 스와이프를 지원
+        pageBuilder: (context, state) =>
+            MaterialPage<void>(key: state.pageKey, child: const LoginPage()),
       ),
 
       // 하단 탭 5개. 탭마다 화면 기록(스택)을 따로 기억합니다.
       StatefulShellRoute.indexedStack(
+        // [리뷰 2] 탭 첫 화면은 로그인으로 돌아가지 않으므로 별도 MaterialPage 감싸기를 제거
         builder: (context, state, navigationShell) =>
             MainShell(navigationShell: navigationShell),
         branches: [
