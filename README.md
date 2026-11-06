@@ -56,12 +56,14 @@ lib/
   ui/
     components/
       buttons/         AppButton · BottomCTA (buttons.dart 하나만 import)
+      inputs/          AppTextField · AppSearchField (inputs.dart 하나만 import)
+      feedback/        빈 상태 · 토스트 · 다이얼로그 · 바텀시트 (feedback.dart 하나만 import)
     pages/             화면 1개 = 폴더 1개
       onboarding/      온보딩 1페이지 (+ widgets/page_indicator.dart)
       login/           로그인 (임시)
       shell/           하단 탭 5개 틀 (MainShell)
       home/ booths/ pay/ map/ my/   탭 화면 (임시)
-      dev/             버튼 카탈로그 (디버그 빌드에서만 /dev/buttons)
+      dev/             입력 · 피드백 카탈로그 (디버그 빌드에서만 /dev/input-feedback)
 test/                  lib/ 와 같은 구조로 테스트를 둡니다
 assets/fonts/          Pretendard 폰트 + 라이선스 (OFL.txt)
 ```
