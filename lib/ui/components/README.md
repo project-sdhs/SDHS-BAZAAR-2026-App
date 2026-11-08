@@ -2,3 +2,4 @@
 
 여러 화면에서 다시 쓰는 디자인 시스템 위젯을 둡니다. 지금은 버튼만 컴포넌트로 만듭니다.
 - `buttons/` — `AppButton`, `BottomCTA` (`buttons.dart` 하나만 import 하면 됩니다)
+- `credit_amount/` — `AppCreditAmount` (`credit_amounts.dart`에서 가져옵니다)
