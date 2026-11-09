@@ -35,7 +35,8 @@ class OnboardingPage extends StatelessWidget {
     color: AppColors.foreground,
   );
 
-  void _goToLogin(BuildContext context) => context.go(Routes.login);
+  // [뒤로 이동 수정] 이전 온보딩 화면을 남겨 버튼/시스템 뒤로/iOS 스와이프를 지원합니다.
+  void _goToLogin(BuildContext context) => context.push(Routes.login);
 
   @override
   Widget build(BuildContext context) {

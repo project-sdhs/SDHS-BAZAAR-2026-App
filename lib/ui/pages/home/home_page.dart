@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
+// [리뷰 2·3] 홈은 탭 첫 화면이므로 이전 로그인 기록과 뒤로 버튼이 없음
+import '../../navigation/app_top_bar.dart';
 
 /// 홈 탭 (임시). 실제 화면은 이후 PR 에서 만듭니다.
 class HomePage extends StatelessWidget {
@@ -10,22 +9,10 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.s16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('홈', style: AppTypography.h3),
-              const SizedBox(height: AppSpacing.s8),
-              Text(
-                '준비 중',
-                style: AppTypography.body.copyWith(color: AppColors.muted),
-              ),
-            ],
-          ),
-        ),
+        // [뒤로 이동 수정] 기존 제목/설명을 공통 상단바로 표시
+        child: AppTopBar(title: '홈', description: '준비 중'),
       ),
     );
   }
