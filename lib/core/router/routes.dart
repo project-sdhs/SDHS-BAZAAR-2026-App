@@ -13,6 +13,9 @@ abstract final class Routes {
   static const String map = '/map';
   static const String my = '/my';
 
+  /// 부스 검색 (하단 탭 바 없이 전체 화면)
+  static const String boothSearch = '/booths/search';
+
   /// 버튼 카탈로그 (디버그 빌드에서만 등록됩니다)
   static const String devButtons = '/dev/buttons';
   static const String devBasics = '/dev/basics';

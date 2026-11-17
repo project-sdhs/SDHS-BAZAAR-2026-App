@@ -13,6 +13,8 @@ class AppSearchField extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.enabled = true,
+    this.autofocus = false,
+    this.compact = false,
   });
 
   final TextEditingController? controller;
@@ -21,6 +23,10 @@ class AppSearchField extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final bool enabled;
+  final bool autofocus;
+
+  /// 높이 48 · 모서리 14 · 아이콘 20 으로 줄인 검색 바용 모양 (부스 검색 화면).
+  final bool compact;
 
   @override
   State<AppSearchField> createState() => _AppSearchFieldState();
@@ -70,12 +76,14 @@ class _AppSearchFieldState extends State<AppSearchField> {
       label: widget.label,
       hintText: widget.hintText,
       enabled: widget.enabled,
-      borderRadius: AppRadius.r16,
+      autofocus: widget.autofocus,
+      compact: widget.compact,
+      borderRadius: widget.compact ? AppRadius.r14 : AppRadius.r16,
       textInputAction: TextInputAction.search,
       onChanged: widget.onChanged,
       onSubmitted: widget.onSubmitted,
       prefixIcon: Icons.search,
-      prefixIconSize: 24,
+      prefixIconSize: widget.compact ? 20 : 24,
       suffixIcon: hasText ? Icons.cancel : null,
       suffixIconTooltip: hasText ? '검색어 지우기' : null,
       onSuffixIconPressed: hasText ? _clearSearch : null,

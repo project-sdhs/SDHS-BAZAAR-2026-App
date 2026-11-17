@@ -32,6 +32,8 @@ class AppTextField extends StatefulWidget {
     this.borderRadius,
     this.errorText,
     this.enabled = true,
+    this.autofocus = false,
+    this.compact = false,
     this.keyboardType,
     this.textInputAction,
     this.onChanged,
@@ -82,6 +84,14 @@ class AppTextField extends StatefulWidget {
 
   /// false이면 편집을 막고 비활성 스타일을 사용합니다.
   final bool enabled;
+
+  /// 화면이 열릴 때 바로 포커스를 받을지 여부. 검색 화면처럼 곧바로 입력하는 곳에 씁니다.
+  final bool autofocus;
+
+  /// 높이 48 · 안쪽 여백 14 · 글자 16 으로 줄인 모양. 검색 바처럼 좁은 줄에 넣을 때 씁니다.
+  ///
+  /// [variant] 가 box 일 때만 적용됩니다.
+  final bool compact;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
@@ -130,6 +140,8 @@ class _AppTextFieldState extends State<AppTextField> {
   Widget build(BuildContext context) {
     final isHero = widget.variant == AppTextFieldVariant.hero;
     final isLine = widget.variant == AppTextFieldVariant.line;
+    final isCompact =
+        widget.compact && widget.variant == AppTextFieldVariant.box;
     final isDisabled = !widget.enabled;
     final hasError = !isDisabled && widget.errorText != null;
     final isFocused = !isDisabled && _focusNode.hasFocus;
@@ -174,6 +186,7 @@ class _AppTextFieldState extends State<AppTextField> {
             initialValue: widget.initialValue,
             focusNode: _focusNode,
             enabled: widget.enabled,
+            autofocus: widget.autofocus,
             keyboardType: widget.keyboardType,
             textInputAction: widget.textInputAction,
             onChanged: widget.onChanged,
@@ -183,7 +196,11 @@ class _AppTextFieldState extends State<AppTextField> {
             textAlign: widget.textAlign,
             style: (isHero ? AppTypography.h1 : AppTypography.body).copyWith(
               color: textColor,
-              fontSize: isHero ? 36 : 17,
+              fontSize: isHero
+                  ? 36
+                  : isCompact
+                  ? 16
+                  : 17,
               fontWeight: isHero ? FontWeight.w700 : null,
             ),
             decoration: InputDecoration(
@@ -191,7 +208,11 @@ class _AppTextFieldState extends State<AppTextField> {
               hintStyle: (isHero ? AppTypography.h1 : AppTypography.body)
                   .copyWith(
                     color: AppColors.muted,
-                    fontSize: isHero ? 36 : 17,
+                    fontSize: isHero
+                        ? 36
+                        : isCompact
+                        ? 16
+                        : 17,
                     fontWeight: isHero ? FontWeight.w700 : null,
                   ),
               filled: !isLine && !isHero,
@@ -199,9 +220,15 @@ class _AppTextFieldState extends State<AppTextField> {
                   ? AppColors.canvas
                   : AppColors.surface,
               contentPadding: EdgeInsets.symmetric(
-                horizontal: isHero ? 0 : AppSpacing.s16,
+                horizontal: isHero
+                    ? 0
+                    : isCompact
+                    ? 14
+                    : AppSpacing.s16,
                 vertical: isHero
                     ? AppSpacing.s4
+                    : isCompact
+                    ? 12
                     : isLine
                     ? AppSpacing.s8
                     : widget.variant == AppTextFieldVariant.big
@@ -210,20 +237,24 @@ class _AppTextFieldState extends State<AppTextField> {
               ),
               prefixIcon: widget.prefixIcon == null
                   ? null
-                  : Icon(
-                      widget.prefixIcon,
-                      color: iconColor,
-                      size: widget.prefixIconSize,
+                  : Padding(
+                      padding: EdgeInsets.only(
+                        left: isCompact ? 14 : 0,
+                        right: isCompact ? AppSpacing.s8 : 0,
+                      ),
+                      child: Icon(
+                        widget.prefixIcon,
+                        color: iconColor,
+                        size: widget.prefixIconSize,
+                      ),
                     ),
-              prefixIconConstraints: const BoxConstraints(
-                minWidth: 48,
-                minHeight: 48,
-              ),
-              suffixIcon: _buildSuffix(iconColor),
-              suffixIconConstraints: const BoxConstraints(
-                minWidth: 48,
-                minHeight: 48,
-              ),
+              prefixIconConstraints: isCompact
+                  ? const BoxConstraints(minWidth: 42, minHeight: 20)
+                  : const BoxConstraints(minWidth: 48, minHeight: 48),
+              suffixIcon: _buildSuffix(iconColor, isCompact: isCompact),
+              suffixIconConstraints: isCompact
+                  ? const BoxConstraints(minWidth: 42, minHeight: 20)
+                  : const BoxConstraints(minWidth: 48, minHeight: 48),
               border: _inputBorder(
                 isLine: isLine,
                 isHero: isHero,
@@ -294,8 +325,20 @@ class _AppTextFieldState extends State<AppTextField> {
     );
   }
 
-  Widget? _buildSuffix(Color iconColor) {
+  Widget? _buildSuffix(Color iconColor, {required bool isCompact}) {
     if (widget.suffix != null) return widget.suffix;
+    if (widget.suffixIcon != null && isCompact) {
+      return IconButton(
+        tooltip: widget.suffixIconTooltip,
+        onPressed: widget.enabled ? widget.onSuffixIconPressed : null,
+        padding: const EdgeInsets.only(left: AppSpacing.s8, right: 14),
+        constraints: const BoxConstraints(minWidth: 42, minHeight: 20),
+        style: IconButton.styleFrom(
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        icon: Icon(widget.suffixIcon, color: iconColor, size: 20),
+      );
+    }
     if (widget.suffixIcon != null) {
       return IconButton(
         tooltip: widget.suffixIconTooltip,
