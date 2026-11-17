@@ -1,8 +1,10 @@
 import 'package:bazaar_app/core/router/app_router.dart';
 import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/core/theme/app_colors.dart';
+import 'package:bazaar_app/state/booth_list_logic.dart';
 import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
 import 'package:bazaar_app/ui/pages/booths/widgets/booth_list_header.dart';
+import 'package:bazaar_app/ui/pages/booths/widgets/booth_sort_control.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -42,6 +44,21 @@ void main() {
 
       await tester.tap(find.byType(BoothSearchEntry));
       expect(taps, 1);
+    });
+  });
+
+  group('BoothSortControl (APP-26)', () {
+    testWidgets('학년 순 / 인기 순을 보여 주고 선택을 알린다', (tester) async {
+      final picked = <BoothSort>[];
+      await tester.pumpWidget(
+        _wrap(BoothSortControl(value: BoothSort.grade, onChanged: picked.add)),
+      );
+
+      expect(find.text('학년 순'), findsOneWidget);
+      expect(find.text('인기 순'), findsOneWidget);
+
+      await tester.tap(find.text('인기 순'));
+      expect(picked, [BoothSort.popular]);
     });
   });
 
