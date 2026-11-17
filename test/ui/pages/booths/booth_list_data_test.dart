@@ -2,7 +2,10 @@ import 'package:bazaar_app/data/models/booth.dart';
 import 'package:bazaar_app/data/models/popular_booth.dart';
 import 'package:bazaar_app/ui/components/basic/basic.dart';
 import 'package:bazaar_app/ui/components/booth_view/booth_views.dart';
+import 'package:bazaar_app/ui/components/credit_amount/credit_amount.dart';
+import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
 import 'package:bazaar_app/ui/pages/booths/booths_page.dart';
+import 'package:bazaar_app/ui/pages/booths/widgets/booth_search_result_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -141,6 +144,108 @@ void main() {
     testWidgets('부스가 하나도 없으면 안내를 보여 준다', (tester) async {
       await _pumpList(tester, loadBooths: () async => const []);
       expect(find.text('표시할 부스가 없어요'), findsOneWidget);
+    });
+  });
+
+  group('검색 결과 (APP-38)', () {
+    Future<void> pumpSearch(
+      WidgetTester tester, {
+      Future<List<Booth>> Function()? loadBooths,
+    }) async {
+      await tester.binding.setSurfaceSize(const Size(390, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BoothSearchPage(
+            loadBooths: loadBooths ?? () async => fixtureBooths(),
+            loadPopularBooths: () async => const [],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('검색어를 입력하면 맞는 부스와 `검색 결과 N` 을 보여 준다', (tester) async {
+      await pumpSearch(tester);
+
+      await tester.enterText(find.byType(TextField), '2학년');
+      await tester.pumpAndSettle();
+
+      expect(find.text('검색 결과 2'), findsOneWidget);
+      expect(find.byType(BoothSearchResultRow), findsNWidgets(2));
+      expect(find.text('2-3 타코야끼'), findsOneWidget);
+      expect(find.text('실시간 인기 검색'), findsNothing);
+    });
+
+    testWidgets('맞는 부스가 없으면 결과 없음 안내를 보여 준다', (tester) async {
+      await pumpSearch(tester);
+
+      await tester.enterText(find.byType(TextField), '없는부스');
+      await tester.pumpAndSettle();
+
+      expect(find.text('검색 결과가 없어요'), findsOneWidget);
+      expect(find.byType(BoothSearchResultRow), findsNothing);
+    });
+
+    testWidgets('결과 행은 사진 56 · 행 높이 80 · 가격을 보여 준다', (tester) async {
+      await pumpSearch(tester);
+      await tester.enterText(find.byType(TextField), '로제');
+      await tester.pumpAndSettle();
+
+      expect(tester.getSize(find.byType(BoothSearchResultRow)).height, 80);
+      expect(find.text('3-1 로제떡볶이'), findsOneWidget);
+      expect(find.text('분식'), findsOneWidget);
+      expect(find.text('본관 1층 로비'), findsOneWidget);
+      final price = tester.widget<AppCreditAmount>(
+        find.byType(AppCreditAmount),
+      );
+      expect(price.amount, 1500);
+      expect(price.suffix, '~');
+    });
+
+    testWidgets('결과를 불러오는 동안 행 자리 표시를 보여 준다', (tester) async {
+      final slow = Future<List<Booth>>.delayed(
+        const Duration(milliseconds: 50),
+        fixtureBooths,
+      );
+      await pumpSearch(tester, loadBooths: () => slow);
+      await tester.enterText(find.byType(TextField), '타코');
+      await tester.pump();
+
+      expect(find.byType(AppSkeleton), findsNWidgets(6));
+      await tester.pumpAndSettle();
+      expect(find.byType(AppSkeleton), findsNothing);
+      expect(find.byType(BoothSearchResultRow), findsOneWidget);
+    });
+
+    testWidgets('입력을 지우면 최근 검색어 영역으로 돌아온다', (tester) async {
+      await pumpSearch(tester);
+      await tester.enterText(find.byType(TextField), '타코');
+      await tester.pumpAndSettle();
+      expect(find.byType(BoothSearchResultRow), findsOneWidget);
+
+      await tester.tap(find.byTooltip('검색어 지우기'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BoothSearchResultRow), findsNothing);
+    });
+
+    testWidgets('부스를 못 불러오면 안내하고 다시 시도한다', (tester) async {
+      var calls = 0;
+      await pumpSearch(
+        tester,
+        loadBooths: () async {
+          calls++;
+          if (calls == 1) throw Exception('서버 오류');
+          return fixtureBooths();
+        },
+      );
+      await tester.enterText(find.byType(TextField), '타코');
+      await tester.pumpAndSettle();
+      expect(find.text('검색할 부스를 불러오지 못했어요'), findsOneWidget);
+
+      await tester.tap(find.text('다시 시도'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BoothSearchResultRow), findsOneWidget);
     });
   });
 }
