@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_colors.dart';
+
 /// 하단 탭 5개를 감싸는 틀. 탭 화면들은 [navigationShell] 안에 그려집니다.
 ///
 /// 탭 순서는 `app_router.dart` 의 `branches` 순서와 같아야 합니다.
-/// (탭 바 디자인은 이후 PR 에서 다듬습니다. 지금은 기본 NavigationBar)
 class MainShell extends StatelessWidget {
   const MainShell({super.key, required this.navigationShell});
 
@@ -23,6 +24,7 @@ class MainShell extends StatelessWidget {
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
+        indicatorColor: Colors.transparent,
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: _onTap,
         destinations: const [
@@ -36,9 +38,32 @@ class MainShell extends StatelessWidget {
             selectedIcon: Icon(Icons.storefront),
             label: '부스',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.qr_code_scanner),
-            label: 'QR 결제',
+          NavigationBarTheme(
+            data: NavigationBarThemeData(
+              labelTextStyle: WidgetStatePropertyAll(
+                TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            child: NavigationDestination(
+              icon: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: SizedBox.square(
+                  dimension: 48,
+                  child: Icon(
+                    Icons.qr_code_scanner,
+                    color: AppColors.onPrimary,
+                  ),
+                ),
+              ),
+              label: 'QR 결제',
+            ),
           ),
           NavigationDestination(
             icon: Icon(Icons.map_outlined),
