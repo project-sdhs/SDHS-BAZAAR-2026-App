@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../ui/pages/booths/booth_search_page.dart';
 import '../../ui/pages/booths/booths_page.dart';
 import '../../ui/pages/dev/button_catalog_page.dart';
 import '../../ui/pages/dev/basic_catalog_page.dart';
@@ -40,6 +41,11 @@ GoRouter createAppRouter({String? initialLocation}) {
         // [뒤로 이동 수정] iOS에서 가장자리 스와이프를 지원
         pageBuilder: (context, state) =>
             MaterialPage<void>(key: state.pageKey, child: const LoginPage()),
+      ),
+
+      GoRoute(
+        path: Routes.boothSearch,
+        builder: (context, state) => const BoothSearchPage(),
       ),
 
       // 하단 탭 5개. 탭마다 화면 기록(스택)을 따로 기억합니다.
