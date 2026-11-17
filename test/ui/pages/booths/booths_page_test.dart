@@ -2,7 +2,9 @@ import 'package:bazaar_app/core/router/app_router.dart';
 import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/core/theme/app_colors.dart';
 import 'package:bazaar_app/state/booth_list_logic.dart';
+import 'package:bazaar_app/ui/components/basic/basic.dart';
 import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
+import 'package:bazaar_app/ui/pages/booths/widgets/booth_grade_filter_chips.dart';
 import 'package:bazaar_app/ui/pages/booths/widgets/booth_list_header.dart';
 import 'package:bazaar_app/ui/pages/booths/widgets/booth_sort_control.dart';
 import 'package:flutter/material.dart';
@@ -62,7 +64,60 @@ void main() {
     });
   });
 
+  group('BoothGradeFilterChips (APP-27)', () {
+    testWidgets('전체 · 1~3학년 · 특별부스 칩을 보여 주고 선택된 칩만 켜진다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          BoothGradeFilterChips(
+            value: BoothGradeFilter.grade2,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      for (final label in ['전체', '1학년', '2학년', '3학년', '특별부스']) {
+        expect(find.text(label), findsOneWidget);
+      }
+      final selected = tester
+          .widgetList<AppChip>(find.byType(AppChip))
+          .where((chip) => chip.selected)
+          .map((chip) => chip.label);
+      expect(selected, ['2학년']);
+    });
+
+    testWidgets('칩을 누르면 해당 필터를 알린다', (tester) async {
+      final picked = <BoothGradeFilter>[];
+      await tester.pumpWidget(
+        _wrap(
+          BoothGradeFilterChips(
+            value: BoothGradeFilter.all,
+            onChanged: picked.add,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('특별부스'));
+      expect(picked, [BoothGradeFilter.special]);
+    });
+  });
+
   group('부스 목록 화면', () {
+    testWidgets('정렬과 필터를 바꾸면 선택이 따라 바뀐다', (tester) async {
+      final router = createAppRouter(initialLocation: Routes.booths);
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+
+      Iterable<String> selectedChips() => tester
+          .widgetList<AppChip>(find.byType(AppChip))
+          .where((chip) => chip.selected)
+          .map((chip) => chip.label);
+      expect(selectedChips(), ['전체']);
+
+      await tester.tap(find.text('3학년'));
+      await tester.pump();
+      expect(selectedChips(), ['3학년']);
+    });
+
     testWidgets('검색 바를 누르면 부스 검색 화면이 열리고 취소하면 돌아온다', (tester) async {
       final router = createAppRouter(initialLocation: Routes.booths);
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
