@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
+import '../../../core/router/routes.dart';
+import 'widgets/booth_list_header.dart';
 
-/// 부스 목록 탭 (임시). 실제 화면은 이후 PR 에서 만듭니다.
+/// 부스 목록 탭. 정렬 · 필터 · 부스 카드 리스트는 이후 티켓에서 붙입니다.
 class BoothsPage extends StatelessWidget {
   const BoothsPage({super.key});
 
@@ -12,19 +12,13 @@ class BoothsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.s16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('부스', style: AppTypography.h3),
-              const SizedBox(height: AppSpacing.s8),
-              Text(
-                '준비 중',
-                style: AppTypography.body.copyWith(color: AppColors.muted),
-              ),
-            ],
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            BoothListHeader(
+              onSearchTap: () => context.push(Routes.boothSearch),
+            ),
+          ],
         ),
       ),
     );
