@@ -91,3 +91,26 @@ List<BoothSection> buildBoothSections(
   }
   return sections;
 }
+
+/// 검색어와 맞는 부스를 찾습니다 (APP-38).
+///
+/// 검색어를 공백으로 나눈 낱말이 모두 부스 이름 · 반 이름 · 분류 · 위치 안에 들어 있으면
+/// 맞는 것으로 봅니다. 대소문자와 공백 차이는 무시합니다.
+/// 메뉴 이름은 부스 목록 응답에 없어서 여기서는 찾지 않습니다.
+List<Booth> searchBooths(List<Booth> booths, String query) {
+  final tokens = query
+      .toLowerCase()
+      .split(RegExp(r'\s+'))
+      .where((token) => token.isNotEmpty)
+      .toList();
+  if (tokens.isEmpty) return const [];
+  return booths.where((booth) {
+    final haystack = [
+      booth.name,
+      booth.boothClass?.name ?? '',
+      booth.category,
+      booth.locationLabel,
+    ].join(' ').toLowerCase().replaceAll(RegExp(r'\s+'), '');
+    return tokens.every(haystack.contains);
+  }).toList();
+}

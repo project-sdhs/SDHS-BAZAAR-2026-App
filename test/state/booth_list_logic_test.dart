@@ -91,4 +91,37 @@ void main() {
       expect(_names(sections), ['2-1 츄러스', '2-3 타코야끼']);
     });
   });
+
+  group('searchBooths (APP-38)', () {
+    final booths = fixtureBooths();
+
+    test('이름 일부로 찾는다', () {
+      expect(searchBooths(booths, '타코').map((b) => b.id), [2]);
+    });
+
+    test('반 이름 · 분류 · 위치로도 찾는다', () {
+      expect(searchBooths(booths, '2학년').map((b) => b.id), [2, 3]);
+      expect(searchBooths(booths, '체험').map((b) => b.id), [5]);
+      expect(searchBooths(booths, '본관 1층').map((b) => b.id), [4, 5]);
+    });
+
+    test('낱말이 여러 개면 모두 들어 있어야 한다', () {
+      expect(searchBooths(booths, '2학년 타코').map((b) => b.id), [2]);
+      expect(searchBooths(booths, '2학년 로제'), isEmpty);
+    });
+
+    test('공백 · 대소문자 차이는 무시한다', () {
+      expect(searchBooths(booths, '  본관1층  ').map((b) => b.id), [4, 5]);
+      expect(
+        searchBooths([fixtureBooth(id: 9, name: 'Taco Bar')], 'taco').single.id,
+        9,
+      );
+    });
+
+    test('검색어가 비었거나 맞는 부스가 없으면 빈 목록이다', () {
+      expect(searchBooths(booths, ''), isEmpty);
+      expect(searchBooths(booths, '   '), isEmpty);
+      expect(searchBooths(booths, '없는부스'), isEmpty);
+    });
+  });
 }
