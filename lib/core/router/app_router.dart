@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../ui/pages/booth_detail/booth_detail_page.dart';
 import '../../ui/pages/booths/booths_page.dart';
 import '../../ui/pages/dev/button_catalog_page.dart';
 import '../../ui/pages/dev/basic_catalog_page.dart';
@@ -39,6 +40,15 @@ GoRouter createAppRouter({String? initialLocation}) {
         // [뒤로 이동 수정] iOS에서 가장자리 스와이프를 지원
         pageBuilder: (context, state) =>
             MaterialPage<void>(key: state.pageKey, child: const LoginPage()),
+      ),
+
+      // 부스 상세: 하단 탭 바를 가리고 전체 화면으로 덮습니다.
+      GoRoute(
+        path: Routes.boothDetailPattern,
+        pageBuilder: (context, state) => MaterialPage<void>(
+          key: state.pageKey,
+          child: BoothDetailPage(boothId: state.pathParameters['boothId']!),
+        ),
       ),
 
       // 하단 탭 5개. 탭마다 화면 기록(스택)을 따로 기억합니다.
