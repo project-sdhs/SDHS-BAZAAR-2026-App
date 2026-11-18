@@ -2,6 +2,7 @@ import 'package:bazaar_app/app.dart';
 import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/ui/navigation/app_top_bar.dart';
 import 'package:bazaar_app/ui/pages/booth_detail/booth_detail_page.dart';
+import 'package:bazaar_app/ui/pages/booth_detail/widgets/booth_info_header.dart';
 import 'package:bazaar_app/ui/pages/booths/booths_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,6 +30,18 @@ void main() {
     expect(find.byTooltip('공유'), findsOneWidget);
     expect(tester.getSize(find.byType(AppTopBar)).height, 49);
     expect(find.byKey(const Key('bottomTabBar')), findsNothing);
+  });
+
+  testWidgets('상단 바 아래에 부스 기본 정보를 보여준다', (tester) async {
+    await openDetailFromList(tester);
+
+    expect(find.byType(BoothInfoHeader), findsOneWidget);
+    expect(find.text('2-3 타코야끼'), findsOneWidget);
+    expect(find.text('운영 중'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.byType(BoothInfoHeader)).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(find.byType(AppTopBar)).dy),
+    );
   });
 
   testWidgets('공유를 누르면 준비 중 안내가 뜬다', (tester) async {
