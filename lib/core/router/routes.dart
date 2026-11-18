@@ -13,6 +13,10 @@ abstract final class Routes {
   static const String map = '/map';
   static const String my = '/my';
 
+  static const String boothDetailPattern = '/booths/:boothId';
+
+  static String boothDetail(String boothId) => '$booths/$boothId';
+
   /// 버튼 카탈로그 (디버그 빌드에서만 등록됩니다)
   static const String devButtons = '/dev/buttons';
   static const String devBasics = '/dev/basics';
