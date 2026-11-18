@@ -1,3 +1,4 @@
+import 'widgets/my_menus.dart';
 import '../../../data/models/my_credit.dart';
 import 'widgets/my_wallet.dart';
 
@@ -21,6 +22,8 @@ class MyPage extends StatelessWidget {
           MyProfile(user: user),
           const SizedBox(height: 24),
           MyWallet(credit: credit),
+          const SizedBox(height: 24),
+          MyMenus(user: user),
         ],
       ),
     ),
