@@ -42,7 +42,6 @@ GoRouter createAppRouter({String? initialLocation}) {
             MaterialPage<void>(key: state.pageKey, child: const LoginPage()),
       ),
 
-      // 부스 상세: 하단 탭 바를 가리고 전체 화면으로 덮습니다.
       GoRoute(
         path: Routes.boothDetailPattern,
         pageBuilder: (context, state) => MaterialPage<void>(

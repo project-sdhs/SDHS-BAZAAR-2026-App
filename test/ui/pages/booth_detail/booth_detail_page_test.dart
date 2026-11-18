@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
-  /// 부스 목록에서 상세로 들어간 상태를 만듭니다.
   Future<void> openDetailFromList(WidgetTester tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -28,7 +27,6 @@ void main() {
     expect(find.byType(AppTopBar), findsOneWidget);
     expect(find.byTooltip('뒤로가기'), findsOneWidget);
     expect(find.byTooltip('공유'), findsOneWidget);
-    // 제목 · 설명 없이 버튼 줄(48 + 위 여백 1)만 차지합니다.
     expect(tester.getSize(find.byType(AppTopBar)).height, 49);
     expect(find.byKey(const Key('bottomTabBar')), findsNothing);
   });

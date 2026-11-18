@@ -13,10 +13,8 @@ abstract final class Routes {
   static const String map = '/map';
   static const String my = '/my';
 
-  /// 부스 상세 (하단 탭 없이 전체 화면). 라우터 등록용 패턴입니다.
   static const String boothDetailPattern = '/booths/:boothId';
 
-  /// 부스 상세로 이동할 때: `context.push(Routes.boothDetail(id))`
   static String boothDetail(String boothId) => '$booths/$boothId';
 
   /// 버튼 카탈로그 (디버그 빌드에서만 등록됩니다)

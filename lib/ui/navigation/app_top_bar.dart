@@ -7,10 +7,8 @@ import '../../core/theme/app_colors.dart';
 class AppTopBar extends StatelessWidget {
   const AppTopBar({super.key, this.title, this.description, this.onShare});
 
-  /// 큰 제목. 없으면 버튼 줄만 그립니다. (예: 부스 상세)
   final String? title;
 
-  /// 제목 아래 설명. [title] 이 있을 때만 표시합니다.
   final String? description;
 
   // [리뷰 4] 필요한 화면만 콜백을 전달
