@@ -53,6 +53,11 @@ class ApiClient {
     return _decode(response);
   }
 
+  Future<Object?> deleteJson(String path) async {
+    final response = await _http.delete(uri(path), headers: _jsonHeaders);
+    return _decode(response);
+  }
+
   void close() => _http.close();
 
   Object? _decode(http.Response response) {
