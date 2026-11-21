@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../data/models/booth.dart';
+import '../../components/buttons/buttons.dart';
 import '../../navigation/app_top_bar.dart';
 import 'booth_sample.dart';
 import 'widgets/booth_info_header.dart';
@@ -51,6 +54,20 @@ class BoothDetailPage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomCTA(
+        buttons: [
+          AppButton(
+            '지도에서 보기',
+            variant: AppButtonVariant.light,
+            onPressed: () => context.go(Routes.map),
+          ),
+          AppButton(
+            'QR로 결제',
+            enabled: _booth.isOpen,
+            onPressed: () => context.go(Routes.pay),
+          ),
+        ],
       ),
     );
   }
