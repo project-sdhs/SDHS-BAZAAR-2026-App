@@ -47,9 +47,11 @@ class _MyPageState extends State<MyPage> {
           }
           final (user, credit) = snapshot.data!;
           return ListView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenHorizontal,
-              vertical: AppSpacing.s16,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenHorizontal,
+              AppSpacing.s8,
+              AppSpacing.screenHorizontal,
+              AppSpacing.s16,
             ),
             children: [
               MyProfile(user: user),

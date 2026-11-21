@@ -17,6 +17,7 @@ class MyMenus extends StatelessWidget {
     String subtitle, {
     bool highlighted = false,
   }) => AppListRow(
+    padding: const EdgeInsets.symmetric(vertical: 4),
     title: title,
     subtitle: subtitle,
     leading: Container(

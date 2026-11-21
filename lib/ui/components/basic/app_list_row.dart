@@ -12,6 +12,7 @@ class AppListRow extends StatelessWidget {
     this.leading,
     this.trailing,
     this.onTap,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
   });
 
   final String title;
@@ -19,6 +20,7 @@ class AppListRow extends StatelessWidget {
   final Widget? leading;
   final Widget? trailing;
   final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -28,7 +30,7 @@ class AppListRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: padding,
         child: Row(
           children: [
             if (leading != null) ...[leading!, const SizedBox(width: 16)],

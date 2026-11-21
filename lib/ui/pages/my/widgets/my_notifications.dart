@@ -17,6 +17,7 @@ class _MyNotificationsState extends State<MyNotifications> {
 
   @override
   Widget build(BuildContext context) => AppListRow(
+    padding: EdgeInsets.zero,
     title: '주문 알림 받기',
     trailing: AppToggle(
       value: _enabled,
