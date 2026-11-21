@@ -28,14 +28,15 @@ class HomeTopBar extends StatelessWidget {
     return SizedBox(
       height: 56,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        // 오른쪽 바깥 여백 4 + 내부 여백 12 = 16.
+        padding: const EdgeInsets.only(left: 16, right: 8),
         child: Row(
           children: [
             // 학교 로고
             Image.asset(
-              'assets/img/SDHS.png',
-              width: 64,
-              height: 36,
+              'assets/images/school_logo.png',
+              width: 96,
+              height: 32,
               fit: BoxFit.contain,
               semanticLabel: '서울디지텍고등학교',
             ),
@@ -45,10 +46,10 @@ class HomeTopBar extends StatelessWidget {
 
             // 알림 버튼
             SizedBox(
-              width: 48,
-              height: 48,
+              width: 40,
+              height: 40,
               child: IconButton(
-                tooltip: hasUnread ? '알림, 새알림 있음' : '알림',
+                tooltip: hasUnread ? '알림, 새 알림 있음' : '알림',
                 onPressed: onNotificationPressed,
                 icon: Stack(
                   clipBehavior: Clip.none,

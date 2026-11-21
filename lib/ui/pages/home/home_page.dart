@@ -10,12 +10,12 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        // [뒤로 이동 수정] 기존 제목/설명을 공통 상단바로 표시
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 학교 로고와 알림버튼이 있는 상단바
             HomeTopBar(
+              hasUnread: true, //파란 점 표시
               onNotificationPressed: () {
                 //알림 화면으로 이동하는 코드 넣을 곳
               },
