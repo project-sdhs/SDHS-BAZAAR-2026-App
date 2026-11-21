@@ -7,4 +7,8 @@ const Booth sampleBooth = Booth(
   isOpen: true,
   location: '신관 2층 복도',
   openHours: '10:00–15:00',
+  operators: [
+    BoothOperator(name: '김서연', role: '반장'),
+    BoothOperator(name: '이도윤', role: '캐셔'),
+  ],
 );

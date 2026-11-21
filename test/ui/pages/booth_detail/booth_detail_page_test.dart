@@ -3,6 +3,7 @@ import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/ui/navigation/app_top_bar.dart';
 import 'package:bazaar_app/ui/pages/booth_detail/booth_detail_page.dart';
 import 'package:bazaar_app/ui/pages/booth_detail/widgets/booth_info_header.dart';
+import 'package:bazaar_app/ui/pages/booth_detail/widgets/booth_operator_tile.dart';
 import 'package:bazaar_app/ui/pages/booths/booths_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,6 +42,21 @@ void main() {
     expect(
       tester.getTopLeft(find.byType(BoothInfoHeader)).dy,
       greaterThanOrEqualTo(tester.getBottomLeft(find.byType(AppTopBar)).dy),
+    );
+  });
+
+  testWidgets('기본 정보 아래에 부스 운영진을 보여준다', (tester) async {
+    await openDetailFromList(tester);
+
+    final section = find.byType(BoothOperatorSection);
+    await tester.scrollUntilVisible(section, 100);
+
+    expect(section, findsOneWidget);
+    expect(find.text('김서연'), findsOneWidget);
+    expect(find.text('반장'), findsOneWidget);
+    expect(
+      tester.getTopLeft(section).dy,
+      greaterThan(tester.getBottomLeft(find.byType(BoothInfoHeader)).dy),
     );
   });
 
