@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import 'map_marker_style.dart';
 
 class MapSearchBar extends StatefulWidget {
   const MapSearchBar({
@@ -28,6 +27,7 @@ class MapSearchBar extends StatefulWidget {
   static const double iconSize = 24;
   static const double iconGap = AppSpacing.s8;
   static const double buttonSize = 40;
+  static const double borderWidth = 1;
 
   @override
   State<MapSearchBar> createState() => _MapSearchBarState();
@@ -87,7 +87,10 @@ class _MapSearchBarState extends State<MapSearchBar> {
       decoration: BoxDecoration(
         color: AppColors.canvas,
         borderRadius: BorderRadius.circular(MapSearchBar.radius),
-        boxShadow: MapMarkerStyle.shadow,
+        border: Border.all(
+          color: AppColors.border,
+          width: MapSearchBar.borderWidth,
+        ),
       ),
       child: Row(
         children: [

@@ -55,7 +55,7 @@ void main() {
     expect(rect.height, MapSearchBar.height);
   });
 
-  testWidgets('흰 배경 · 둥근 모서리 · 안내 문구 · 검색 · 필터 아이콘', (tester) async {
+  testWidgets('흰 배경 · 둥근 모서리 · 1px 테두리 · 안내 문구 · 검색 · 필터 아이콘', (tester) async {
     await _pumpMap(tester);
 
     final box = tester.widget<Container>(
@@ -69,6 +69,11 @@ void main() {
     final decoration = box.decoration! as BoxDecoration;
     expect(decoration.color, AppColors.canvas);
     expect(decoration.borderRadius, BorderRadius.circular(MapSearchBar.radius));
+    expect(
+      decoration.border,
+      Border.all(color: AppColors.border, width: MapSearchBar.borderWidth),
+    );
+    expect(decoration.boxShadow, isNull);
 
     expect(find.text('지도에서 부스 검색'), findsOneWidget);
     expect(find.byIcon(Icons.search), findsOneWidget);
