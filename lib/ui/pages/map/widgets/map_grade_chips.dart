@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import 'map_marker_style.dart';
 import 'map_search_bar.dart';
 
 class MapGradeChips extends StatelessWidget {
@@ -21,6 +20,7 @@ class MapGradeChips extends StatelessWidget {
   static const double horizontalPadding = 16;
   static const double radius = AppRadius.r10;
   static const double gap = AppSpacing.s6;
+  static const double borderWidth = 1;
 
   static String labelOf(int? grade) => grade == null ? '전체' : '$grade학년';
 
@@ -68,13 +68,17 @@ class _GradeChip extends StatelessWidget {
         child: Container(
           height: MapGradeChips.height,
           padding: const EdgeInsets.symmetric(
-            horizontal: MapGradeChips.horizontalPadding,
+            horizontal:
+                MapGradeChips.horizontalPadding - MapGradeChips.borderWidth,
           ),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected ? AppColors.foreground : AppColors.canvas,
             borderRadius: BorderRadius.circular(MapGradeChips.radius),
-            boxShadow: MapMarkerStyle.shadow,
+            border: Border.all(
+              color: selected ? AppColors.foreground : AppColors.border,
+              width: MapGradeChips.borderWidth,
+            ),
           ),
           child: Text(
             label,

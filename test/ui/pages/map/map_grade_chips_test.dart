@@ -103,6 +103,15 @@ void main() {
 
     expect(_decorationOf(tester, '전체').color, AppColors.foreground);
     expect(_decorationOf(tester, '2학년').color, AppColors.canvas);
+    expect(
+      _decorationOf(tester, '전체').border,
+      Border.all(color: AppColors.foreground, width: MapGradeChips.borderWidth),
+    );
+    expect(
+      _decorationOf(tester, '2학년').border,
+      Border.all(color: AppColors.border, width: MapGradeChips.borderWidth),
+    );
+    expect(_decorationOf(tester, '2학년').boxShadow, isNull);
     expect(find.byType(BoothMarker), findsNWidgets(3));
     expect(find.byType(ClusterMarker), findsOneWidget);
   });
