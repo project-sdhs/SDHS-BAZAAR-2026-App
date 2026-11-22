@@ -6,3 +6,4 @@ export 'app_list_row.dart';
 export 'app_segmented_control.dart';
 export 'app_skeleton.dart';
 export 'app_toggle.dart';
+export 'booth_category_icon.dart';
