@@ -13,6 +13,9 @@ abstract final class Routes {
   static const String map = '/map';
   static const String my = '/my';
 
+  /// 부스 검색 (하단 탭 바 없이 전체 화면)
+  static const String boothSearch = '/booths/search';
+
   static const String boothDetailPattern = '/booths/:boothId';
 
   static String boothDetail(String boothId) => '$booths/$boothId';
@@ -23,4 +26,7 @@ abstract final class Routes {
 
   /// 입력 · 피드백 카탈로그 (디버그 빌드에서만 등록됩니다)
   static const String devInputFeedback = '/dev/input-feedback';
+
+  /// 부스 카드(BoothView) 카탈로그 (디버그 빌드에서만 등록됩니다)
+  static const String devBoothView = '/dev/booth-view';
 }
