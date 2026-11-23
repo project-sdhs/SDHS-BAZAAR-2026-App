@@ -28,6 +28,7 @@ class MapSearchBar extends StatefulWidget {
   static const double iconGap = AppSpacing.s8;
   static const double buttonSize = 40;
   static const double borderWidth = 1;
+  static const FontWeight textWeight = FontWeight.w400;
 
   @override
   State<MapSearchBar> createState() => _MapSearchBarState();
@@ -76,7 +77,10 @@ class _MapSearchBarState extends State<MapSearchBar> {
   @override
   Widget build(BuildContext context) {
     final hasText = _controller.text.isNotEmpty;
-    final textStyle = AppTypography.body.copyWith(color: AppColors.foreground);
+    final textStyle = AppTypography.body.copyWith(
+      fontWeight: MapSearchBar.textWeight,
+      color: AppColors.foreground,
+    );
 
     return Container(
       height: MapSearchBar.height,

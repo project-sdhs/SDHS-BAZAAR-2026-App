@@ -15,10 +15,12 @@ class BoothMapMarker extends MapMarker {
     required super.position,
     required this.name,
     required this.category,
-  });
+    required this.grade,
+  }) : assert(grade >= 1 && grade <= 3);
 
   final String name;
   final BoothCategory category;
+  final int grade;
 }
 
 class ClusterMapMarker extends MapMarker {

@@ -5,6 +5,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../data/dummy/map_markers_dummy.dart';
 import '../../../data/models/map_marker.dart';
 import 'widgets/campus_map_layer.dart';
+import 'widgets/map_grade_chips.dart';
 import 'widgets/map_search_bar.dart';
 
 class MapPage extends StatefulWidget {
@@ -18,6 +19,7 @@ class MapPage extends StatefulWidget {
   final String? initialSelectedBoothId;
 
   static const double searchBarTop = AppSpacing.s8;
+  static const double chipsTop = AppSpacing.s8;
 
   @override
   State<MapPage> createState() => _MapPageState();
@@ -26,13 +28,17 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   late String? _selectedBoothId = widget.initialSelectedBoothId;
   String _query = '';
+  int? _grade;
 
   List<MapMarker> get _visibleMarkers {
     final query = _query.trim();
-    if (query.isEmpty) return widget.markers;
+    if (query.isEmpty && _grade == null) return widget.markers;
     return [
       for (final marker in widget.markers)
-        if (marker is BoothMapMarker && marker.name.contains(query)) marker,
+        if (marker is BoothMapMarker &&
+            marker.name.contains(query) &&
+            (_grade == null || marker.grade == _grade))
+          marker,
     ];
   }
 
@@ -62,8 +68,19 @@ class _MapPageState extends State<MapPage> {
                   AppSpacing.screenHorizontal,
                   0,
                 ),
-                child: MapSearchBar(
-                  onChanged: (value) => setState(() => _query = value),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: MapPage.chipsTop,
+                  children: [
+                    MapSearchBar(
+                      onChanged: (value) => setState(() => _query = value),
+                    ),
+                    MapGradeChips(
+                      selectedGrade: _grade,
+                      onChanged: (grade) => setState(() => _grade = grade),
+                    ),
+                  ],
                 ),
               ),
             ),
