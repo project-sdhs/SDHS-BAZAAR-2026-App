@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../data/dummy/map_markers_dummy.dart';
 import '../../../data/models/map_marker.dart';
 import 'widgets/campus_map_layer.dart';
+import 'widgets/map_search_bar.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({
@@ -15,21 +17,58 @@ class MapPage extends StatefulWidget {
   final List<MapMarker> markers;
   final String? initialSelectedBoothId;
 
+  static const double searchBarTop = AppSpacing.s8;
+
   @override
   State<MapPage> createState() => _MapPageState();
 }
 
 class _MapPageState extends State<MapPage> {
   late String? _selectedBoothId = widget.initialSelectedBoothId;
+  String _query = '';
+
+  List<MapMarker> get _visibleMarkers {
+    final query = _query.trim();
+    if (query.isEmpty) return widget.markers;
+    return [
+      for (final marker in widget.markers)
+        if (marker is BoothMapMarker && marker.name.contains(query)) marker,
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: CampusMapLayer(
-        markers: widget.markers,
-        selectedBoothId: _selectedBoothId,
-        onBoothTap: (booth) => setState(() => _selectedBoothId = booth.id),
+      resizeToAvoidBottomInset: false,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          CampusMapLayer(
+            markers: _visibleMarkers,
+            selectedBoothId: _selectedBoothId,
+            onBoothTap: (booth) => setState(() => _selectedBoothId = booth.id),
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screenHorizontal,
+                  MapPage.searchBarTop,
+                  AppSpacing.screenHorizontal,
+                  0,
+                ),
+                child: MapSearchBar(
+                  onChanged: (value) => setState(() => _query = value),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
