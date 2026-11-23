@@ -117,6 +117,20 @@ void main() {
       expect(selected, ['2학년']);
     });
 
+    testWidgets('칩 높이는 38 이고 좌우 16 · 칩 사이 8 이다 (Figma)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          BoothGradeFilterChips(value: BoothGradeFilter.all, onChanged: (_) {}),
+        ),
+      );
+      final first = tester.getRect(find.byType(AppChip).first);
+      final second = tester.getRect(find.byType(AppChip).at(1));
+      expect(first.height, 38);
+      expect(first.left, 16);
+      expect(second.left - first.right, 8);
+      expect(tester.getSize(find.byType(BoothGradeFilterChips)).height, 38);
+    });
+
     testWidgets('칩을 누르면 해당 필터를 알린다', (tester) async {
       final picked = <BoothGradeFilter>[];
       await tester.pumpWidget(
@@ -134,6 +148,13 @@ void main() {
   });
 
   group('부스 목록 화면', () {
+    testWidgets('정렬 막대와 칩 줄 사이 보이는 간격은 16', (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: BoothsPage()));
+      final sort = tester.getRect(find.byType(AppSegmentedControl<BoothSort>));
+      final chips = tester.getRect(find.byType(AppChip).first);
+      expect(chips.top - sort.bottom, 16);
+    });
+
     testWidgets('필터를 바꾸면 칩 선택이 따라 바뀐다', (tester) async {
       final router = createAppRouter(initialLocation: Routes.booths);
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
