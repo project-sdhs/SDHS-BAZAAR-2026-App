@@ -9,7 +9,8 @@
   - `BoothViewSize.list` 가득×176 — 부스 목록 (기본값)
 - `rank` 를 주면 왼쪽 위에 원형 순위 배지가 나타납니다. 주지 않으면 숨깁니다.
 - `thumbnail` 이 없거나 불러오지 못하면 `fallbackColor` 로 배경을 채웁니다.
-- `orderCount` 가 null 이면 `주문 N` 을 숨깁니다.
+- `trailingLabel` 은 카드 오른쪽 끝 글자입니다. 화면마다 달라서 문자열로 받습니다(`주문 128` · `메뉴 9개` · `도보 1분`). null 이면 숨깁니다.
+- `locationLabel` · `minPrice` 가 null 이면(위치 미정 · 판매 중인 메뉴 없음) 그 자리를 숨깁니다.
 
 ```dart
 import 'package:bazaar_app/ui/components/booth_view/booth_views.dart';
@@ -19,7 +20,7 @@ BoothView(
   category: '분식',
   locationLabel: '본관 1층 로비',
   minPrice: 1500,
-  orderCount: 128,
+  trailingLabel: '주문 128',
   rank: 1,
   size: BoothViewSize.home,
   thumbnail: NetworkImage(imageUrl),
