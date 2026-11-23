@@ -1,4 +1,3 @@
-import 'package:bazaar_app/data/models/popular_booth.dart';
 import 'package:bazaar_app/state/booth_list_logic.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -49,42 +48,30 @@ void main() {
       );
     });
 
-    test('인기 순이면 구역 없이 인기 순위대로 놓고 순위 밖은 이름 순으로 뒤에 붙는다', () {
+    test('인기 순이면 구역 없이 서버가 준 순서 그대로 놓는다', () {
+      // 서버가 인기 순으로 정렬해 준 목록 (주문 수 많은 순)
+      final byPopularity = fixtureBooths().reversed.toList();
       final sections = buildBoothSections(
-        fixtureBooths(),
+        byPopularity,
         sort: BoothSort.popular,
         filter: BoothGradeFilter.all,
-        popular: const [
-          PopularBooth(rank: 1, boothId: 4, name: 'x', paymentCount: 128),
-          PopularBooth(rank: 2, boothId: 2, name: 'x', paymentCount: 97),
-        ],
       );
 
       expect(sections, hasLength(1));
-      expect(_names(sections), [
-        '3-1 로제떡볶이',
-        '2-3 타코야끼',
-        '1-2 컵밥분식',
-        '2-1 츄러스',
-        '학생회 포토부스',
-      ]);
-    });
-
-    test('인기 순에도 학년 필터가 적용된다', () {
-      final sections = buildBoothSections(
-        fixtureBooths(),
-        sort: BoothSort.popular,
-        filter: BoothGradeFilter.grade2,
-        popular: const [
-          PopularBooth(rank: 1, boothId: 2, name: 'x', paymentCount: 97),
-        ],
+      expect(
+        _names(sections),
+        byPopularity.map((booth) => booth.name).toList(),
       );
-      expect(_names(sections), ['2-3 타코야끼', '2-1 츄러스']);
     });
 
-    test('인기 정보가 없어도 인기 순은 이름 순으로 보여 준다', () {
+    test('인기 순에도 학년 필터가 적용되고 서버 순서를 지킨다', () {
+      final byPopularity = [
+        fixtureBooths()[2], // 2-1 츄러스
+        fixtureBooths()[0],
+        fixtureBooths()[1], // 2-3 타코야끼
+      ];
       final sections = buildBoothSections(
-        fixtureBooths(),
+        byPopularity,
         sort: BoothSort.popular,
         filter: BoothGradeFilter.grade2,
       );

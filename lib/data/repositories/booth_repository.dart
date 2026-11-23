@@ -8,13 +8,19 @@ class BoothRepository {
 
   final ApiClient _api;
 
-  /// 부스 전체 목록 (`GET /booths`).
+  /// 부스 전체 목록 (`GET /booths?sort=grade|popular`). 서버가 준 순서 그대로입니다.
   ///
   /// 응답 모양이 다르면 [FormatException] 을 던집니다.
-  Future<List<Booth>> booths() async {
-    final items = _items(await _api.getJson('/booths'), '부스 목록');
+  Future<List<Booth>> booths({String sort = 'grade'}) async {
+    final items = _items(
+      await _api.getJson('/booths', query: {'sort': sort}),
+      '부스 목록',
+    );
     return items.map((item) => Booth.fromJson(item)).toList();
   }
+
+  /// 앱이 끝날 때 HTTP 연결을 닫습니다.
+  void close() => _api.close();
 
   /// 실시간 인기 부스. 순위 순서로 돌려줍니다.
   ///

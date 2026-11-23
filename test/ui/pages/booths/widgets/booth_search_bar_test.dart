@@ -1,3 +1,4 @@
+import 'package:bazaar_app/app_providers.dart';
 import 'package:bazaar_app/core/router/app_router.dart';
 import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
@@ -42,7 +43,9 @@ void main() {
       expect(cancel.left - field.right, 8);
     });
 
-    testWidgets('취소는 16px 600 이고 입력창 모서리는 14, 아이콘은 20 이다', (tester) async {
+    testWidgets('취소는 16px 600 이고 입력창 모서리는 14, 돋보기는 22 · 지우기는 20 이다', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _wrap(
           BoothSearchBar(
@@ -58,10 +61,102 @@ void main() {
       expect(cancel.style!.fontSize, 16);
       expect(cancel.style!.fontWeight, FontWeight.w600);
       expect(cancel.style!.color, AppColors.body);
-      expect(tester.widget<Icon>(find.byIcon(Icons.search)).size, 20);
+      expect(tester.widget<Icon>(find.byIcon(Icons.search)).size, 22);
       expect(tester.widget<Icon>(find.byIcon(Icons.cancel)).size, 20);
       final text = tester.widget<EditableText>(find.byType(EditableText));
       expect(text.style.fontSize, 16);
+    });
+
+    testWidgets('취소 글자 오른쪽 끝이 화면 오른쪽 16 선에 맞고 입력창은 그만큼 넓다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          BoothSearchBar(
+            controller: TextEditingController(),
+            onChanged: (_) {},
+            onSubmitted: (_) {},
+            onCancel: () {},
+          ),
+        ),
+      );
+      final screenWidth =
+          tester.view.physicalSize.width / tester.view.devicePixelRatio;
+      final cancelText = tester.getRect(find.text('취소'));
+      // 취소 터치 영역(좌우 8)이 오른쪽 여백 16 안으로 8 들어가서 글자 끝이 16 선에 닿는다.
+      expect(cancelText.right, closeTo(screenWidth - 16, 0.5));
+      final field = tester.getRect(find.byType(AppSearchField));
+      expect(field.right, closeTo(cancelText.left - 8 - 8, 0.5));
+    });
+
+    testWidgets('돋보기 22 · 아이콘과 글자 사이 8 (글자는 입력창 왼쪽에서 44)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          BoothSearchBar(
+            controller: TextEditingController(text: '타'),
+            onChanged: (_) {},
+            onSubmitted: (_) {},
+            onCancel: () {},
+          ),
+        ),
+      );
+      final field = tester.getRect(find.byType(AppSearchField));
+      final icon = tester.getRect(find.byIcon(Icons.search));
+      final text = tester.getRect(find.byType(EditableText));
+      expect(icon.size, const Size(22, 22));
+      expect(icon.left - field.left, 14);
+      expect(text.left - icon.right, 8);
+      expect(text.left - field.left, 44);
+    });
+
+    testWidgets('지우기 버튼은 보이는 아이콘 20 에 누르는 영역 세로 48', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          BoothSearchBar(
+            controller: TextEditingController(text: '타'),
+            onChanged: (_) {},
+            onSubmitted: (_) {},
+            onCancel: () {},
+          ),
+        ),
+      );
+      final button = tester.getSize(find.byType(IconButton));
+      expect(button.height, 48);
+      expect(tester.getSize(find.byIcon(Icons.cancel)), const Size(20, 20));
+      expect(tester.getSize(find.byType(AppSearchField)).height, 48);
+    });
+
+    testWidgets('아이콘 바로 아래를 눌러도 검색어가 지워진다', (tester) async {
+      final controller = TextEditingController(text: '타코');
+      await tester.pumpWidget(
+        _wrap(
+          BoothSearchBar(
+            controller: controller,
+            onChanged: (_) {},
+            onSubmitted: (_) {},
+            onCancel: () {},
+          ),
+        ),
+      );
+      final icon = tester.getCenter(find.byIcon(Icons.cancel));
+      await tester.tapAt(icon + const Offset(0, 18));
+      await tester.pump();
+      expect(controller.text, isEmpty);
+    });
+
+    testWidgets('검색어는 30자까지만 입력된다', (tester) async {
+      final controller = TextEditingController();
+      await tester.pumpWidget(
+        _wrap(
+          BoothSearchBar(
+            controller: controller,
+            onChanged: (_) {},
+            onSubmitted: (_) {},
+            onCancel: () {},
+          ),
+        ),
+      );
+      await tester.enterText(find.byType(EditableText), '가' * 45);
+      await tester.pump();
+      expect(controller.text.length, 30);
     });
 
     testWidgets('화면이 열리면 입력창에 포커스가 간다', (tester) async {
@@ -177,7 +272,9 @@ void main() {
   group('BoothSearchPage 경로', () {
     testWidgets('검색 경로는 탭 바 없이 검색 화면을 연다', (tester) async {
       final router = createAppRouter(initialLocation: Routes.boothSearch);
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(
+        AppProviders(child: MaterialApp.router(routerConfig: router)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(BoothSearchPage), findsOneWidget);
@@ -186,7 +283,9 @@ void main() {
 
     testWidgets('이전 화면이 없을 때 취소하면 부스 탭으로 간다', (tester) async {
       final router = createAppRouter(initialLocation: Routes.boothSearch);
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(
+        AppProviders(child: MaterialApp.router(routerConfig: router)),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('취소'));

@@ -81,6 +81,66 @@ void main() {
     );
   });
 
+  test('status 는 enum 으로 읽는다 (open · preparing · closed)', () {
+    expect(Booth.fromJson(_normal).status, BoothStatus.open);
+    expect(Booth.fromJson(_special).status, BoothStatus.preparing);
+    expect(
+      Booth.fromJson({..._normal, 'status': 'closed'}).status,
+      BoothStatus.closed,
+    );
+  });
+
+  test('모르는 status 면 FormatException (오타가 그냥 통과하지 않는다)', () {
+    expect(
+      () => Booth.fromJson({..._normal, 'status': 'opne'}),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
+  test('위치가 정해지지 않은 부스(location null)도 읽는다', () {
+    final booth = Booth.fromJson({..._normal, 'location': null});
+    expect(booth.locationLabel, isNull);
+    expect(booth.name, '2-3 타코야끼');
+  });
+
+  test('location 은 있는데 label 이 없어도 읽는다', () {
+    final booth = Booth.fromJson({..._normal, 'location': <String, Object?>{}});
+    expect(booth.locationLabel, isNull);
+  });
+
+  test('판매 중인 메뉴가 없으면(minPrice null) 가격이 null 이다', () {
+    final booth = Booth.fromJson({..._normal, 'minPrice': null});
+    expect(booth.minPrice, isNull);
+  });
+
+  test('위치와 가격이 둘 다 null 인 부스 하나가 있어도 목록 전체를 읽는다', () async {
+    final booths = await _repo({
+      'items': [
+        _normal,
+        {..._special, 'location': null, 'minPrice': null},
+      ],
+    }).booths();
+    expect(booths, hasLength(2));
+    expect(booths.last.locationLabel, isNull);
+    expect(booths.last.minPrice, isNull);
+  });
+
+  test('booths(sort) 는 sort 쿼리를 서버에 보낸다', () async {
+    Uri? seen;
+    final repo = BoothRepository(
+      ApiClient(
+        baseUrl: 'http://test',
+        httpClient: MockClient((request) async {
+          seen = request.url;
+          return http.Response('{"items": []}', 200);
+        }),
+      ),
+    );
+    await repo.booths(sort: 'popular');
+    expect(seen!.path, '/booths');
+    expect(seen!.queryParameters['sort'], 'popular');
+  });
+
   test('booths() 는 items 를 부스 목록으로 돌려준다', () async {
     final booths = await _repo({
       'items': [_normal, _special],

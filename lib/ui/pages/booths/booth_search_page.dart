@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../data/api/api_client.dart';
 import '../../../data/models/popular_booth.dart';
 import '../../../data/repositories/booth_repository.dart';
-import '../../../data/repositories/recent_search_store.dart';
 import '../../../state/recent_search_state.dart';
 import 'widgets/booth_search_bar.dart';
 import 'widgets/popular_searches_section.dart';
@@ -19,17 +18,7 @@ import 'widgets/recent_searches_section.dart';
 /// 검색어가 비어 있으면 최근 검색어(APP-39)와 실시간 인기 검색(APP-40)을 보여 줍니다.
 /// 검색 결과는 이후 티켓에서 붙입니다.
 class BoothSearchPage extends StatefulWidget {
-  const BoothSearchPage({
-    super.key,
-    this.recentSearches,
-    this.loadPopularBooths,
-  });
-
-  /// 최근 검색어 상태. 없으면 앱을 끄면 사라지는 메모리 저장소를 씁니다.
-  final RecentSearchState? recentSearches;
-
-  /// 인기 부스를 가져오는 함수. 없으면 서버(`GET /booths/popular`)에서 가져옵니다.
-  final Future<List<PopularBooth>> Function()? loadPopularBooths;
+  const BoothSearchPage({super.key});
 
   @override
   State<BoothSearchPage> createState() => _BoothSearchPageState();
@@ -37,18 +26,17 @@ class BoothSearchPage extends StatefulWidget {
 
 class _BoothSearchPageState extends State<BoothSearchPage> {
   final _controller = TextEditingController();
-  late final RecentSearchState _recent;
-  late final bool _ownsRecent;
-  late final BoothRepository _repository = BoothRepository(ApiClient());
   late Future<List<PopularBooth>> _popular;
+
+  /// 앱 전체에서 한 번만 만든 최근 검색어 (`AppProviders`). 화면을 닫아도 남습니다.
+  RecentSearchState get _recent => context.read<RecentSearchState>();
+
+  /// 서버 호출은 밖에서 받은 저장소로만 합니다 (`AppProviders`).
+  BoothRepository get _repository => context.read<BoothRepository>();
 
   @override
   void initState() {
     super.initState();
-    _ownsRecent = widget.recentSearches == null;
-    _recent =
-        widget.recentSearches ?? RecentSearchState(MemoryRecentSearchStore());
-    _recent.load();
     _popular = _fetchPopular();
     _controller.addListener(_rebuild);
   }
@@ -56,17 +44,12 @@ class _BoothSearchPageState extends State<BoothSearchPage> {
   @override
   void dispose() {
     _controller.dispose();
-    if (_ownsRecent) _recent.dispose();
     super.dispose();
   }
 
   void _rebuild() => setState(() {});
 
-  Future<List<PopularBooth>> _fetchPopular() {
-    final loader = widget.loadPopularBooths;
-    if (loader != null) return loader();
-    return _repository.popularBooths();
-  }
+  Future<List<PopularBooth>> _fetchPopular() => _repository.popularBooths();
 
   void _retryPopular() {
     setState(() {
@@ -115,16 +98,22 @@ class _BoothSearchPageState extends State<BoothSearchPage> {
                 child: ListView(
                   padding: const EdgeInsets.only(top: AppSpacing.s16),
                   children: [
-                    ListenableBuilder(
-                      listenable: _recent,
-                      builder: (context, _) => RecentSearchesSection(
-                        keywords: _recent.keywords,
-                        onSelected: _searchAgain,
-                        onRemoved: _recent.remove,
-                        onClearAll: _recent.clear,
+                    Consumer<RecentSearchState>(
+                      builder: (context, recent, _) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          RecentSearchesSection(
+                            keywords: recent.keywords,
+                            onSelected: _searchAgain,
+                            onRemoved: recent.remove,
+                            onClearAll: recent.clear,
+                          ),
+                          // 구역 사이 32. 최근 검색어가 없으면 첫 구역이므로 넣지 않습니다.
+                          if (recent.keywords.isNotEmpty)
+                            const SizedBox(height: AppSpacing.s32),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.s32),
                     FutureBuilder<List<PopularBooth>>(
                       future: _popular,
                       builder: (context, snapshot) {
@@ -158,12 +147,18 @@ class _PopularError extends StatelessWidget {
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenHorizontal,
       ),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
+      child: Semantics(
+        button: true,
+        excludeSemantics: true,
+        label: '인기 검색을 불러오지 못했어요. 눌러서 다시 시도해요',
         onTap: onRetry,
-        child: Text(
-          '인기 검색을 불러오지 못했어요. 눌러서 다시 시도해요',
-          style: AppTypography.bodySmall.copyWith(color: AppColors.muted),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onRetry,
+          child: Text(
+            '인기 검색을 불러오지 못했어요. 눌러서 다시 시도해요',
+            style: AppTypography.bodySmall.copyWith(color: AppColors.muted),
+          ),
         ),
       ),
     );

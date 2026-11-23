@@ -7,9 +7,9 @@ Booth fixtureBooth({
   int classNo = 1,
   String category = '간식',
   BoothType type = BoothType.normal,
-  String status = 'open',
-  String location = '신관 2층 복도',
-  int minPrice = 1000,
+  BoothStatus status = BoothStatus.open,
+  String? location = '신관 2층 복도',
+  int? minPrice = 1000,
 }) => Booth(
   id: id,
   name: name,
@@ -39,7 +39,13 @@ List<Booth> fixtureBooths() => [
     classNo: 3,
     location: '신관 2층 복도',
   ),
-  fixtureBooth(id: 3, name: '2-1 츄러스', grade: 2, classNo: 1, status: 'closed'),
+  fixtureBooth(
+    id: 3,
+    name: '2-1 츄러스',
+    grade: 2,
+    classNo: 1,
+    status: BoothStatus.closed,
+  ),
   fixtureBooth(
     id: 4,
     name: '3-1 로제떡볶이',
