@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../ui/pages/booth_detail/booth_detail_page.dart';
+import '../../ui/pages/booths/booth_search_page.dart';
 import '../../ui/pages/booths/booths_page.dart';
 import '../../ui/pages/dev/button_catalog_page.dart';
 import '../../ui/pages/dev/basic_catalog_page.dart';
+import '../../ui/pages/dev/booth_view_catalog_page.dart';
 import '../../ui/pages/dev/input_feedback_catalog_page.dart';
 import '../../ui/pages/home/home_page.dart';
 import '../../ui/pages/login/login_page.dart';
@@ -42,6 +44,12 @@ GoRouter createAppRouter({String? initialLocation}) {
             MaterialPage<void>(key: state.pageKey, child: const LoginPage()),
       ),
 
+      GoRoute(
+        path: Routes.boothSearch,
+        builder: (context, state) => const BoothSearchPage(),
+      ),
+
+      // `/booths/search` 보다 뒤에 둬야 search 가 boothId 로 잡히지 않아요.
       GoRoute(
         path: Routes.boothDetailPattern,
         pageBuilder: (context, state) => MaterialPage<void>(
@@ -109,6 +117,11 @@ GoRouter createAppRouter({String? initialLocation}) {
         GoRoute(
           path: Routes.devButtons,
           builder: (context, state) => const ButtonCatalogPage(),
+        ),
+      if (kDebugMode)
+        GoRoute(
+          path: Routes.devBoothView,
+          builder: (context, state) => const BoothViewCatalogPage(),
         ),
       if (kDebugMode)
         GoRoute(

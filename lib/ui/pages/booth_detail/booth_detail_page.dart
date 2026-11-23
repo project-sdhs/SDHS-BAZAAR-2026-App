@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../data/models/booth.dart';
+import '../../../data/models/booth_detail.dart';
 import '../../navigation/app_top_bar.dart';
 import 'booth_sample.dart';
 import 'widgets/booth_info_header.dart';
@@ -12,7 +12,7 @@ class BoothDetailPage extends StatelessWidget {
 
   final String boothId;
 
-  Booth get _booth => sampleBooth;
+  BoothDetail get _booth => sampleBooth;
 
   @override
   Widget build(BuildContext context) {

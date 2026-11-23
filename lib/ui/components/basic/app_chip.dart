@@ -17,25 +17,30 @@ class AppChip extends StatelessWidget {
   final ValueChanged<bool>? onSelected;
 
   @override
-  Widget build(BuildContext context) => FilterChip(
-    label: Text(label),
-    selected: selected,
-    onSelected: onSelected,
-    showCheckmark: false,
-    backgroundColor: AppColors.surface,
-    selectedColor: AppColors.foreground,
-    disabledColor: AppColors.surface,
-    side: BorderSide.none,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-    labelStyle: AppTypography.bodySmall.copyWith(
-      fontSize: 15,
-      fontWeight: FontWeight.w600,
-      color: onSelected == null
-          ? AppColors.muted
-          : selected
-          ? AppColors.onPrimary
-          : AppColors.body,
+  Widget build(BuildContext context) => SizedBox(
+    // Figma 칩 높이 38. 기본은 터치 여백 때문에 줄 높이가 48 이 되어 보이는 간격이 벌어집니다.
+    height: 38,
+    child: FilterChip(
+      label: Text(label),
+      selected: selected,
+      onSelected: onSelected,
+      showCheckmark: false,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      backgroundColor: AppColors.surface,
+      selectedColor: AppColors.foreground,
+      disabledColor: AppColors.surface,
+      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      labelStyle: AppTypography.bodySmall.copyWith(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: onSelected == null
+            ? AppColors.muted
+            : selected
+            ? AppColors.onPrimary
+            : AppColors.body,
+      ),
     ),
   );
 }

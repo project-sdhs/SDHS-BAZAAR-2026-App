@@ -1,5 +1,6 @@
 import 'package:bazaar_app/app.dart';
 import 'package:bazaar_app/core/router/routes.dart';
+import 'package:bazaar_app/ui/components/booth_view/booth_views.dart';
 import 'package:bazaar_app/ui/pages/booths/booths_page.dart';
 import 'package:bazaar_app/ui/pages/dev/button_catalog_page.dart';
 import 'package:bazaar_app/ui/pages/dev/input_feedback_catalog_page.dart';
@@ -139,6 +140,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(InputFeedbackCatalogPage), findsOneWidget);
+  });
+
+  testWidgets('디버그 빌드에서는 /dev/booth-view 카탈로그가 열린다', (tester) async {
+    await tester.pumpWidget(
+      const BazaarApp(initialLocation: Routes.devBoothView),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('부스 카드 카탈로그'), findsOneWidget);
+    expect(find.byType(BoothView), findsWidgets);
   });
 
   testWidgets('디버그 빌드에서 버튼 카탈로그 경로가 열린다', (tester) async {

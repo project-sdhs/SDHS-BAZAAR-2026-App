@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/router/app_router.dart';
+import 'app_providers.dart';
 import 'core/theme/app_theme.dart';
 
 /// 앱의 뿌리 위젯: 테마와 라우터를 연결합니다.
@@ -28,11 +29,13 @@ class _BazaarAppState extends State<BazaarApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: '디지텍 바자회',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      routerConfig: _router,
+    return AppProviders(
+      child: MaterialApp.router(
+        title: '디지텍 바자회',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        routerConfig: _router,
+      ),
     );
   }
 }
