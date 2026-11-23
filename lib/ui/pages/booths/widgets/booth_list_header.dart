@@ -30,13 +30,15 @@ class BoothListHeader extends StatelessWidget {
           const SizedBox(height: AppSpacing.s16),
           const Text('부스', style: AppTypography.h3),
           if (openBoothCount != null) ...[
-            const SizedBox(height: AppSpacing.s4),
+            // Figma: 제목 끝 52 → 부제 58 (간격 6), 부제 끝 82 → 검색 바 102 (간격 20)
+            const SizedBox(height: AppSpacing.s6),
             Text(
-              '학년별 $openBoothCount곳이 열려 있어요',
+              '학년별로 $openBoothCount곳이 열려 있어요',
               style: AppTypography.body.copyWith(color: AppColors.muted),
             ),
-          ],
-          const SizedBox(height: AppSpacing.s16),
+            const SizedBox(height: 20),
+          ] else
+            const SizedBox(height: AppSpacing.s16),
           BoothSearchEntry(onTap: onSearchTap),
         ],
       ),
