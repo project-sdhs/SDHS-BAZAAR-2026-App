@@ -7,6 +7,9 @@ class BoothRepository {
 
   final ApiClient _api;
 
+  /// 앱이 끝날 때 HTTP 연결을 닫습니다.
+  void close() => _api.close();
+
   /// 실시간 인기 부스. 순위 순서로 돌려줍니다.
   ///
   /// 응답 모양이 다르면 [FormatException] 을 던집니다.

@@ -41,24 +41,31 @@ class AppSegmentedControl<T extends Object> extends StatelessWidget {
                         ? null
                         : () => onChanged!(item.key),
                     borderRadius: BorderRadius.circular(10),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      child: Text(
-                        item.value,
-                        textAlign: TextAlign.center,
-                        style: AppTypography.bodySmall.copyWith(
-                          fontSize: 15,
-                          fontWeight: item.key == value
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: onChanged == null
-                              ? AppColors.muted
-                              : item.key == value
-                              ? AppColors.foreground
-                              : AppColors.muted,
+                    // 칸 높이 40 (막대 전체 48 = 칸 40 + 위아래 4). 큰 글자에서는 늘어납니다.
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 40),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        child: Center(
+                          heightFactor: 1,
+                          child: Text(
+                            item.value,
+                            textAlign: TextAlign.center,
+                            style: AppTypography.bodySmall.copyWith(
+                              fontSize: 15,
+                              fontWeight: item.key == value
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
+                              color: onChanged == null
+                                  ? AppColors.muted
+                                  : item.key == value
+                                  ? AppColors.foreground
+                                  : AppColors.muted,
+                            ),
+                          ),
                         ),
                       ),
                     ),

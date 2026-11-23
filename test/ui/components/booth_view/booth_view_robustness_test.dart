@@ -18,7 +18,7 @@ void main() {
                   category: '체험 부스',
                   locationLabel: '본관 3층 대강당 앞 복도 끝',
                   minPrice: 1234567,
-                  orderCount: 99999,
+                  trailingLabel: '주문 99999',
                   rank: 12,
                   size: size,
                 ),
