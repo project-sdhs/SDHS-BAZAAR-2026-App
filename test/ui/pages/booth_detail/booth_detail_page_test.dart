@@ -1,10 +1,13 @@
 import 'package:bazaar_app/app.dart';
 import 'package:bazaar_app/core/router/routes.dart';
+import 'package:bazaar_app/ui/components/buttons/buttons.dart';
 import 'package:bazaar_app/ui/navigation/app_top_bar.dart';
 import 'package:bazaar_app/ui/pages/booth_detail/booth_detail_page.dart';
 import 'package:bazaar_app/ui/pages/booth_detail/widgets/booth_info_header.dart';
 import 'package:bazaar_app/ui/pages/booth_detail/widgets/booth_operator_tile.dart';
 import 'package:bazaar_app/ui/pages/booths/booths_page.dart';
+import 'package:bazaar_app/ui/pages/map/map_page.dart';
+import 'package:bazaar_app/ui/pages/pay/pay_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -58,6 +61,40 @@ void main() {
       tester.getTopLeft(section).dy,
       greaterThan(tester.getBottomLeft(find.byType(BoothInfoHeader)).dy),
     );
+  });
+
+  testWidgets('하단에 지도에서 보기 · QR로 결제 버튼이 고정되어 있다', (tester) async {
+    await openDetailFromList(tester);
+
+    expect(find.byType(BottomCTA), findsOneWidget);
+    final map = tester.getRect(find.widgetWithText(AppButton, '지도에서 보기'));
+    final pay = tester.getRect(find.widgetWithText(AppButton, 'QR로 결제'));
+    expect(map.height, 56);
+    expect(map.width, pay.width);
+    expect(map.right, lessThan(pay.left));
+    expect(map.bottom, 844 - BottomCTA.bottomPadding);
+    expect(
+      tester.getBottomLeft(find.byType(SingleChildScrollView)).dy,
+      lessThanOrEqualTo(tester.getTopLeft(find.byType(BottomCTA)).dy),
+    );
+  });
+
+  testWidgets('지도에서 보기를 누르면 지도 탭으로 이동한다', (tester) async {
+    await openDetailFromList(tester);
+
+    await tester.tap(find.text('지도에서 보기'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BoothDetailPage), findsNothing);
+    expect(find.byType(MapPage), findsOneWidget);
+  });
+
+  testWidgets('QR로 결제를 누르면 결제 탭으로 이동한다', (tester) async {
+    await openDetailFromList(tester);
+
+    await tester.tap(find.text('QR로 결제'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BoothDetailPage), findsNothing);
+    expect(find.byType(PayPage), findsOneWidget);
   });
 
   testWidgets('공유를 누르면 준비 중 안내가 뜬다', (tester) async {
