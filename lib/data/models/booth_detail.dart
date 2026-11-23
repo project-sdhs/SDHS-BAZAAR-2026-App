@@ -8,6 +8,7 @@ class BoothDetail {
     required this.location,
     required this.openHours,
     this.imageUrl,
+    this.operators = const [],
   });
 
   final String id;
@@ -17,6 +18,7 @@ class BoothDetail {
   final String location;
   final String openHours;
   final String? imageUrl;
+  final List<BoothOperator> operators;
 
   factory BoothDetail.fromJson(Map<String, dynamic> json) {
     return BoothDetail(
@@ -27,6 +29,10 @@ class BoothDetail {
       location: json['location'] as String,
       openHours: json['openHours'] as String,
       imageUrl: json['imageUrl'] as String?,
+      operators: [
+        for (final item in json['operators'] as List<dynamic>? ?? const [])
+          BoothOperator.fromJson(item as Map<String, dynamic>),
+      ],
     );
   }
 
@@ -38,5 +44,22 @@ class BoothDetail {
     'location': location,
     'openHours': openHours,
     'imageUrl': imageUrl,
+    'operators': [for (final operator in operators) operator.toJson()],
   };
+}
+
+class BoothOperator {
+  const BoothOperator({required this.name, required this.role});
+
+  final String name;
+  final String role;
+
+  factory BoothOperator.fromJson(Map<String, dynamic> json) {
+    return BoothOperator(
+      name: json['name'] as String,
+      role: json['role'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {'name': name, 'role': role};
 }

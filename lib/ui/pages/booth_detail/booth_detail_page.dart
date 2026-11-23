@@ -6,6 +6,7 @@ import '../../../data/models/booth_detail.dart';
 import '../../navigation/app_top_bar.dart';
 import 'booth_sample.dart';
 import 'widgets/booth_info_header.dart';
+import 'widgets/booth_operator_tile.dart';
 
 class BoothDetailPage extends StatelessWidget {
   const BoothDetailPage({super.key, required this.boothId});
@@ -36,7 +37,16 @@ class BoothDetailPage extends StatelessWidget {
                   AppSpacing.screenHorizontal,
                   AppSpacing.s24,
                 ),
-                child: BoothInfoHeader(booth: _booth),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    BoothInfoHeader(booth: _booth),
+                    if (_booth.operators.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.s32),
+                      BoothOperatorSection(operators: _booth.operators),
+                    ],
+                  ],
+                ),
               ),
             ),
           ],

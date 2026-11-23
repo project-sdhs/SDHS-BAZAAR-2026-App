@@ -71,6 +71,9 @@ void main() {
       'location': '신관 2층 복도',
       'openHours': '10:00–15:00',
       'imageUrl': 'https://example.com/a.png',
+      'operators': [
+        {'name': '김서연', 'role': '반장'},
+      ],
     };
     final booth = BoothDetail.fromJson(json);
     expect(booth.imageUrl, 'https://example.com/a.png');
