@@ -28,4 +28,8 @@ abstract final class AppColors {
 
   // 이미지가 들어갈 자리 (일러스트 대체 박스 등)
   static const Color placeholder = Color(0xFFE9ECF0);
+
+  // QR 카메라 화면
+  static const Color scannerBackground = Color(0xFF11161E);
+  static const Color scannerScrim = Color(0x99000000);
 }

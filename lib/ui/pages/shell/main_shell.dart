@@ -115,6 +115,8 @@ class _BottomTabBar extends StatelessWidget {
             const SizedBox(height: AppSpacing.s4),
             Text(
               tab.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTypography.caption.copyWith(
                 fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 color: color,
@@ -143,6 +145,8 @@ class _BottomTabBar extends StatelessWidget {
                 const SizedBox(height: AppSpacing.s4),
                 Text(
                   _qrLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.caption.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,
