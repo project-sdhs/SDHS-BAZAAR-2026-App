@@ -1,6 +1,7 @@
 import 'package:bazaar_app/data/repositories/booth_repositories.dart';
 import 'package:bazaar_app/ui/pages/home/home_intro.dart';
 import 'package:flutter/material.dart';
+
 import 'home_top_bar.dart';
 
 /// 홈 탭 (임시). 실제 화면은 이후 PR 에서 만듭니다.
@@ -10,10 +11,11 @@ class HomePage extends StatefulWidget {
   @override
   State<HomePage> createState() => _HomePageState();
 }
+
 class _HomePageState extends State<HomePage> {
   //서버에서 열린 부스 개수를 가져옴
   late final Future<int> openBoothCount = fetchOpenBoothCount();
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,9 +32,7 @@ class _HomePageState extends State<HomePage> {
             ),
 
             // 열린 부스 개수 + 설명 문장
-            HomeIntro(
-              openBoothCount: openBoothCount,
-            ),
+            HomeIntro(openBoothCount: openBoothCount),
 
             // 나머지 홈 화면 내용은 여기에 추가
           ],

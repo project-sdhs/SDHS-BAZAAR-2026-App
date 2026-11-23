@@ -18,7 +18,7 @@ Future<int> fetchOpenBoothCount() async {
       throw const FormatException('부스 개수가 올바르지 않습니다.');
     }
 
-  return count;
+    return count;
   } finally {
     client.close();
   }

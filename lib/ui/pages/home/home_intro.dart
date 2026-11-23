@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 class HomeIntro extends StatelessWidget {
-  const HomeIntro({
-    super.key,
-    required this.openBoothCount,
-  });
+  const HomeIntro({super.key, required this.openBoothCount});
 
   // 서버에서 받아올 열린 부스 개수
   final Future<int> openBoothCount;
@@ -26,11 +23,11 @@ class HomeIntro extends StatelessWidget {
             SizedBox(
               height: 36,
               child: FutureBuilder<int>(
-                future: openBoothCount, 
-                builder: (context,snapshot) {
+                future: openBoothCount,
+                builder: (context, snapshot) {
                   String title = '오늘 열린 부스 확인 중';
 
-                  if(snapshot.hasError) {
+                  if (snapshot.hasError) {
                     title = '부스 정보를 불러오지 못했어요';
                   } else if (snapshot.hasData) {
                     title = '오늘 열린 부스 ${snapshot.data}곳';
@@ -44,7 +41,7 @@ class HomeIntro extends StatelessWidget {
                       fontFamily: 'Pretendard',
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
-                      height: 36/24,
+                      height: 36 / 24,
                       color: AppColors.foreground,
                     ),
                   );
@@ -62,7 +59,7 @@ class HomeIntro extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Pretendard',
                 fontSize: 16,
-                height: 24/16,
+                height: 24 / 16,
                 color: AppColors.muted,
               ),
             ),
