@@ -2,6 +2,7 @@ import 'package:bazaar_app/app_providers.dart';
 import 'package:bazaar_app/core/router/app_router.dart';
 import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/core/theme/app_colors.dart';
+import 'package:bazaar_app/data/repositories/booth_repository.dart';
 import 'package:bazaar_app/state/booth_list_logic.dart';
 import 'package:bazaar_app/ui/components/basic/basic.dart';
 import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
@@ -11,6 +12,14 @@ import 'package:bazaar_app/ui/pages/booths/widgets/booth_list_header.dart';
 import 'package:bazaar_app/ui/pages/booths/widgets/booth_sort_control.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+
+import '../../../support/fake_booth_repository.dart';
+
+Widget _app(Widget page) => Provider<BoothRepository>.value(
+  value: FakeBoothRepository(),
+  child: MaterialApp(home: page),
+);
 
 Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 
@@ -150,7 +159,7 @@ void main() {
 
   group('부스 목록 화면', () {
     testWidgets('정렬 막대와 칩 줄 사이 보이는 간격은 16', (tester) async {
-      await tester.pumpWidget(const MaterialApp(home: BoothsPage()));
+      await tester.pumpWidget(_app(const BoothsPage()));
       final sort = tester.getRect(find.byType(AppSegmentedControl<BoothSort>));
       final chips = tester.getRect(find.byType(AppChip).first);
       expect(chips.top - sort.bottom, 16);
@@ -175,7 +184,7 @@ void main() {
     });
 
     testWidgets('인기 순을 누르면 선택 칸이 인기 순으로 바뀐다', (tester) async {
-      await tester.pumpWidget(const MaterialApp(home: BoothsPage()));
+      await tester.pumpWidget(_app(const BoothsPage()));
 
       Color? cellColor(String label) => tester
           .widget<Material>(
