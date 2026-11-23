@@ -1,6 +1,6 @@
-import '../../../data/models/booth.dart';
+import '../../../data/models/booth_detail.dart';
 
-const Booth sampleBooth = Booth(
+const BoothDetail sampleBooth = BoothDetail(
   id: 'sample',
   name: '2-3 타코야끼',
   className: '2학년 3반',

@@ -1,10 +1,10 @@
-import 'package:bazaar_app/data/models/booth.dart';
+import 'package:bazaar_app/data/models/booth_detail.dart';
 import 'package:bazaar_app/ui/components/basic/basic.dart';
 import 'package:bazaar_app/ui/pages/booth_detail/widgets/booth_info_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const _booth = Booth(
+const _booth = BoothDetail(
   id: 'b1',
   name: '2-3 타코야끼',
   className: '2학년 3반',
@@ -13,7 +13,7 @@ const _booth = Booth(
   openHours: '10:00–15:00',
 );
 
-Future<void> _pump(WidgetTester tester, Booth booth) async {
+Future<void> _pump(WidgetTester tester, BoothDetail booth) async {
   await tester.pumpWidget(
     MaterialApp(
       home: Scaffold(
@@ -36,7 +36,7 @@ void main() {
   testWidgets('운영 중이 아니면 운영 종료로 보여준다', (tester) async {
     await _pump(
       tester,
-      const Booth(
+      const BoothDetail(
         id: 'b2',
         name: '1-1 떡볶이',
         className: '1학년 1반',
@@ -62,7 +62,7 @@ void main() {
     expect(size.width / size.height, closeTo(296 / 148, 0.001));
   });
 
-  test('Booth 는 JSON 으로 주고받을 수 있다', () {
+  test('BoothDetail 은 JSON 으로 주고받을 수 있다', () {
     final json = {
       'id': 'b1',
       'name': '2-3 타코야끼',
@@ -75,7 +75,7 @@ void main() {
         {'name': '김서연', 'role': '반장'},
       ],
     };
-    final booth = Booth.fromJson(json);
+    final booth = BoothDetail.fromJson(json);
     expect(booth.imageUrl, 'https://example.com/a.png');
     expect(booth.toJson(), json);
   });
