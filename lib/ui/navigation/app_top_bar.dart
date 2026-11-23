@@ -5,15 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 
 class AppTopBar extends StatelessWidget {
-  const AppTopBar({
-    super.key,
-    required this.title,
-    required this.description,
-    this.onShare,
-  });
+  const AppTopBar({super.key, this.title, this.description, this.onShare});
 
-  final String title;
-  final String description;
+  final String? title;
+
+  final String? description;
 
   // [리뷰 4] 필요한 화면만 콜백을 전달
   final VoidCallback? onShare;
@@ -30,6 +26,8 @@ class AppTopBar extends StatelessWidget {
 
     // [리뷰 3] 돌아갈 화면이 없으면 눌러도 반응 없는 뒤로 버튼을 표시 X
     final canGoBack = context.canPop();
+    final title = this.title;
+    final description = this.description;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -82,34 +80,38 @@ class AppTopBar extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 26,
-              fontWeight: FontWeight.w700,
-              height: 39 / 26,
-              color: AppColors.foreground,
+        if (title != null) ...[
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontFamily: 'Pretendard',
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                height: 39 / 26,
+                color: AppColors.foreground,
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 3),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            description,
-            style: const TextStyle(
-              fontFamily: 'Pretendard',
-              fontSize: 16,
-              height: 24 / 16,
-              color: AppColors.muted,
+          if (description != null) ...[
+            const SizedBox(height: 3),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                description,
+                style: const TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontSize: 16,
+                  height: 24 / 16,
+                  color: AppColors.muted,
+                ),
+              ),
             ),
-          ),
-        ),
-        const SizedBox(height: 31),
+          ],
+          const SizedBox(height: 31),
+        ],
       ],
     );
   }
