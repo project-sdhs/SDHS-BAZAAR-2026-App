@@ -20,7 +20,7 @@ Widget _wrap(Widget child, {double width = 390}) => MaterialApp(
 BoothView _booth({
   BoothViewSize size = BoothViewSize.list,
   int? rank,
-  int? orderCount = 128,
+  String? trailingLabel = '주문 128',
   ImageProvider? thumbnail,
   VoidCallback? onTap,
   String name = '3-1 로제떡볶이',
@@ -29,7 +29,7 @@ BoothView _booth({
   category: '분식',
   locationLabel: '본관 1층 로비',
   minPrice: 1500,
-  orderCount: orderCount,
+  trailingLabel: trailingLabel,
   rank: rank,
   size: size,
   thumbnail: thumbnail,
@@ -120,11 +120,33 @@ void main() {
       }
     });
 
-    testWidgets('주문 수가 null 이면 숨긴다', (tester) async {
+    testWidgets('오른쪽 글자가 null 이면 숨긴다', (tester) async {
       await tester.pumpWidget(
-        _wrap(_booth(size: BoothViewSize.home, orderCount: null)),
+        _wrap(_booth(size: BoothViewSize.home, trailingLabel: null)),
       );
       expect(find.textContaining('주문'), findsNothing);
+    });
+
+    testWidgets('오른쪽 글자는 문자열이라 메뉴 N개 · 도보 N분도 적을 수 있다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(_booth(size: BoothViewSize.home, trailingLabel: '메뉴 9개')),
+      );
+      expect(find.text('메뉴 9개'), findsOneWidget);
+    });
+
+    testWidgets('위치와 가격이 null 이어도 그리고 그 자리는 숨긴다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const BoothView(
+            name: '3-3 준비 중',
+            category: '체험',
+            size: BoothViewSize.home,
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.text('3-3 준비 중'), findsOneWidget);
+      expect(find.byType(AppCreditAmount), findsNothing);
     });
 
     testWidgets('이름이 길면 한 줄로 줄이고 넘치지 않는다', (tester) async {
@@ -140,6 +162,51 @@ void main() {
       expect(text.maxLines, 1);
       expect(text.overflow, TextOverflow.ellipsis);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('배치 (Figma)', () {
+    testWidgets('정보 띠 높이는 70 (이름 첫 줄 20 + 줄 사이 6 + 둘째 줄 20 + 위아래 12)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_wrap(_booth(size: BoothViewSize.home)));
+      final panel = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('3-1 로제떡볶이'),
+              matching: find.byType(ColoredBox),
+            )
+            .first,
+      );
+      expect(panel.height, 70);
+      expect(panel.top, 110);
+      expect(tester.getSize(find.text('3-1 로제떡볶이')).height, 20);
+    });
+
+    testWidgets('이름은 가격을 뺀 남은 폭을 모두 쓴다 (폭의 절반에서 잘리지 않는다)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(_booth(size: BoothViewSize.home, name: '학부모회 커피트럭 아주 긴 이름의 부스')),
+      );
+      final name = tester.getSize(find.textContaining('학부모회'));
+      final price = tester.getSize(find.byType(AppCreditAmount));
+      // 안쪽 폭 236(264 - 좌우 14) 에서 가격 칸과 간격 8 을 뺀 나머지를 모두 쓴다.
+      expect(name.width, closeTo(236 - 8 - price.width, 0.5));
+    });
+
+    testWidgets('오른쪽 글자는 카드 오른쪽 안쪽 여백(14) 끝에 붙는다', (tester) async {
+      await tester.pumpWidget(_wrap(_booth(size: BoothViewSize.home)));
+      final card = tester.getRect(find.byType(BoothView));
+      final label = tester.getRect(find.text('주문 128'));
+      expect(label.right, closeTo(card.right - 14, 0.5));
+    });
+
+    testWidgets('분류 배지와 위치 사이 간격은 6', (tester) async {
+      await tester.pumpWidget(_wrap(_booth(size: BoothViewSize.home)));
+      final badge = tester.getRect(
+        find.ancestor(of: find.text('분식'), matching: find.byType(Container)),
+      );
+      final location = tester.getRect(find.text('본관 1층 로비'));
+      expect(location.left - badge.right, 6);
     });
   });
 

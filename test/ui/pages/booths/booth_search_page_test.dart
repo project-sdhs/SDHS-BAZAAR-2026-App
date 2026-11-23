@@ -1,9 +1,18 @@
+import 'package:bazaar_app/app_providers.dart';
+import 'package:bazaar_app/core/router/app_router.dart';
+import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/data/models/popular_booth.dart';
+import 'package:bazaar_app/data/repositories/booth_repository.dart';
 import 'package:bazaar_app/data/repositories/recent_search_store.dart';
 import 'package:bazaar_app/state/recent_search_state.dart';
 import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
+import 'package:bazaar_app/ui/pages/booths/widgets/booth_list_header.dart';
+import 'package:bazaar_app/ui/pages/booths/widgets/booth_search_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+
+import '../../../support/fake_booth_repository.dart';
 
 const _popular = [
   PopularBooth(rank: 1, boothId: 7, name: '3-1 로제떡볶이', paymentCount: 128),
@@ -16,12 +25,18 @@ Future<RecentSearchState> _pump(
   Future<List<PopularBooth>> Function()? loadPopular,
 }) async {
   final state = RecentSearchState(MemoryRecentSearchStore(recent));
+  await state.load();
   await tester.pumpWidget(
-    MaterialApp(
-      home: BoothSearchPage(
-        recentSearches: state,
-        loadPopularBooths: loadPopular ?? () async => _popular,
-      ),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<RecentSearchState>.value(value: state),
+        Provider<BoothRepository>.value(
+          value: FakeBoothRepository(
+            popular: loadPopular ?? () async => _popular,
+          ),
+        ),
+      ],
+      child: const MaterialApp(home: BoothSearchPage()),
     ),
   );
   await tester.pumpAndSettle();
@@ -150,8 +165,9 @@ void main() {
 
   testWidgets('검색 화면을 닫은 뒤에 저장이 끝나도 오류가 나지 않는다', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: BoothSearchPage(loadPopularBooths: () async => const []),
+      AppProviders(
+        boothRepository: FakeBoothRepository(),
+        child: const MaterialApp(home: BoothSearchPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -162,5 +178,84 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('검색 화면을 닫았다 다시 열어도 최근 검색어가 남는다', (tester) async {
+    final router = createAppRouter(initialLocation: Routes.booths);
+    await tester.pumpWidget(
+      AppProviders(
+        boothRepository: FakeBoothRepository(),
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(BoothSearchEntry));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '타코야끼');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BoothSearchPage), findsNothing);
+
+    await tester.tap(find.byType(BoothSearchEntry));
+    await tester.pumpAndSettle();
+    expect(find.text('최근 검색어'), findsOneWidget);
+    expect(find.text('타코야끼'), findsOneWidget);
+  });
+
+  testWidgets('최근 검색어 칩 간격은 8 이고 제목과 칩 사이는 12 (Figma)', (tester) async {
+    await _pump(tester, recent: ['타코야끼', '떡볶이', '컵밥']);
+    final title = tester.getRect(find.text('최근 검색어'));
+    final chip = tester.getRect(
+      find
+          .ancestor(of: find.text('타코야끼'), matching: find.byType(DecoratedBox))
+          .first,
+    );
+    final next = tester.getRect(
+      find
+          .ancestor(of: find.text('떡볶이'), matching: find.byType(DecoratedBox))
+          .first,
+    );
+    expect(chip.height, 38);
+    expect(chip.top - title.bottom, closeTo(12, 2));
+    expect(next.top, chip.top);
+    expect(next.left - chip.right, 8);
+    expect(chip.width, lessThan(200)); // 글자 너비만큼만 차지한다
+  });
+
+  group('인기 검색 간격 · 접근성 (리뷰 반영)', () {
+    testWidgets('최근 검색어가 없으면 인기 검색이 검색 바 아래 16 에서 시작한다', (tester) async {
+      await _pump(tester);
+      final bar = tester.getRect(find.byType(BoothSearchBar));
+      final title = tester.getRect(find.text('실시간 인기 검색'));
+      expect(title.top - bar.bottom, closeTo(16, 1));
+    });
+
+    testWidgets('최근 검색어가 있으면 두 구역 사이는 32', (tester) async {
+      await _pump(tester, recent: ['타코야끼']);
+      final chip = tester.getRect(
+        find
+            .ancestor(
+              of: find.text('타코야끼'),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      final title = tester.getRect(find.text('실시간 인기 검색'));
+      expect(title.top - chip.bottom, closeTo(32, 1));
+    });
+
+    testWidgets('불러오기 실패 문구는 버튼으로 읽힌다', (tester) async {
+      final handle = tester.ensureSemantics();
+      await _pump(tester, loadPopular: () async => throw Exception('오류'));
+      final node = tester.getSemantics(
+        find.bySemanticsLabel(RegExp('인기 검색을 불러오지 못했어요')),
+      );
+      expect(node.flagsCollection.isButton, isTrue);
+      handle.dispose();
+    });
   });
 }

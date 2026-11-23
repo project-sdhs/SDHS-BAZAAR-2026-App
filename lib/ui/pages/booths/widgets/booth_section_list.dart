@@ -37,6 +37,7 @@ class BoothSectionList extends StatelessWidget {
         for (final section in sections) ...[
           SearchSectionTitle(
             section.title,
+            bottomSpacing: 12, // Figma 학년 제목(높이 18) 아래 카드가 y=30
             trailing: Text(
               '${section.booths.length}곳',
               style: AppTypography.bodySmall.copyWith(color: AppColors.muted),
@@ -55,6 +56,8 @@ class BoothSectionList extends StatelessWidget {
                 category: booth.category,
                 locationLabel: booth.locationLabel,
                 minPrice: booth.minPrice,
+                // Figma 부스 목록 카드의 오른쪽 아래 글자
+                trailingLabel: '메뉴 ${booth.menuCount}개',
                 thumbnail: _thumbnail(booth),
                 onTap: onBoothTap == null ? null : () => onBoothTap!(booth),
               ),

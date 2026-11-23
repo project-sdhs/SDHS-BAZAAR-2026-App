@@ -1,9 +1,12 @@
 import 'package:bazaar_app/data/models/booth.dart';
+import 'package:bazaar_app/data/repositories/booth_repository.dart';
 import 'package:bazaar_app/ui/pages/booths/booths_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 import '../../../support/booth_fixtures.dart';
+import '../../../support/fake_booth_repository.dart';
 import '../../../support/pump_with_scale.dart';
 
 void main() {
@@ -11,12 +14,14 @@ void main() {
     testWidgets('글자 $scale 배 · 너비 320 에서 부스 목록 화면이 넘치지 않는다', (tester) async {
       await pumpWithScale(
         tester,
-        BoothsPage(
-          loadBooths: () async => [
-            fixtureBooth(id: 1, name: kLongBoothName, grade: 1),
-            ...fixtureBooths(),
-          ],
-          loadPopularBooths: () async => const [],
+        Provider<BoothRepository>.value(
+          value: FakeBoothRepository(),
+          child: BoothsPage(
+            loadBooths: (_) async => [
+              fixtureBooth(id: 1, name: kLongBoothName, grade: 1),
+              ...fixtureBooths(),
+            ],
+          ),
         ),
         scale: scale,
         height: 1200,
@@ -31,11 +36,9 @@ void main() {
       fixtureBooths,
     );
     await tester.pumpWidget(
-      MaterialApp(
-        home: BoothsPage(
-          loadBooths: () => slow,
-          loadPopularBooths: () async => const [],
-        ),
+      Provider<BoothRepository>.value(
+        value: FakeBoothRepository(),
+        child: MaterialApp(home: BoothsPage(loadBooths: (_) => slow)),
       ),
     );
     await tester.pumpWidget(const SizedBox.shrink());

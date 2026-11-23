@@ -56,9 +56,14 @@ class BoothSearchResultRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: onTap != null,
-      label:
-          '${booth.name}, ${booth.category}, ${booth.locationLabel}, '
-          '${AppCreditAmount.format(booth.minPrice)}크레딧부터',
+      label: [
+        booth.name,
+        booth.category,
+        ?booth.locationLabel,
+        ?(booth.minPrice == null
+            ? null
+            : '${AppCreditAmount.format(booth.minPrice!)}크레딧부터'),
+      ].join(', '),
       excludeSemantics: true,
       onTap: onTap,
       child: GestureDetector(
@@ -95,14 +100,16 @@ class BoothSearchResultRow extends StatelessWidget {
                       children: [
                         Flexible(child: _CategoryBadge(label: booth.category)),
                         Expanded(
-                          child: Text(
-                            booth.locationLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.muted,
-                            ),
-                          ),
+                          child: booth.locationLabel == null
+                              ? const SizedBox.shrink()
+                              : Text(
+                                  booth.locationLabel!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.muted,
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -110,19 +117,20 @@ class BoothSearchResultRow extends StatelessWidget {
                 ),
               ),
               // 가격이 아주 길어도 이름 자리를 다 먹지 않도록 줄어듭니다.
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 140),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: AppCreditAmount(
-                    amount: booth.minPrice,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    suffix: '~',
+              if (booth.minPrice case final price?)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 140),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: AppCreditAmount(
+                      amount: price,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      suffix: '~',
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -165,7 +173,7 @@ class _CategoryBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 20,
+      height: 22, // Figma 분류 배지 높이
       padding: const EdgeInsets.symmetric(horizontal: 6),
       alignment: Alignment.center,
       decoration: BoxDecoration(
@@ -193,7 +201,10 @@ class _NoResults extends StatelessWidget {
   Widget build(BuildContext context) {
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 260),
-      child: const AppEmptyState(title: '검색 결과가 없어요', message: '다른 검색어로 찾아보세요'),
+      child: const AppEmptyState(
+        title: '검색 결과가 없어요',
+        message: '반 번호(예: 2-3)나 메뉴 이름으로 다시 검색해 보세요',
+      ),
     );
   }
 }

@@ -1,11 +1,17 @@
+import 'package:bazaar_app/app_providers.dart';
 import 'package:bazaar_app/data/models/popular_booth.dart';
+import 'package:bazaar_app/data/repositories/booth_repository.dart';
 import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
 import 'package:bazaar_app/ui/pages/booths/widgets/booth_search_result_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../support/booth_fixtures.dart';
+import '../../../support/fake_booth_repository.dart';
 import '../../../support/pump_with_scale.dart';
+
+Widget _app(BoothRepository repository, Widget page) =>
+    AppProviders(boothRepository: repository, child: page);
 
 void main() {
   for (final scale in kTextScales) {
@@ -14,20 +20,24 @@ void main() {
     ) async {
       await pumpWithScale(
         tester,
-        BoothSearchPage(
-          loadPopularBooths: () async => const [
-            PopularBooth(
-              rank: 1,
-              boothId: 1,
-              name: kLongBoothName,
-              paymentCount: 123456,
-            ),
-          ],
-          loadBooths: () async => fixtureBooths(),
+        _app(
+          FakeBoothRepository(
+            popular: () async => const [
+              PopularBooth(
+                rank: 1,
+                boothId: 1,
+                name: kLongBoothName,
+                paymentCount: 123456,
+              ),
+            ],
+            booths: (sort, query) async => fixtureBooths(),
+          ),
+          const BoothSearchPage(),
         ),
         scale: scale,
       );
       await tester.enterText(find.byType(TextField), '가' * 40);
+      await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     });
@@ -63,9 +73,9 @@ void main() {
   testWidgets('검색 화면을 닫은 뒤에 저장이 끝나도 오류가 나지 않는다', (tester) async {
     await pumpWithScale(
       tester,
-      BoothSearchPage(
-        loadPopularBooths: () async => const [],
-        loadBooths: () async => fixtureBooths(),
+      _app(
+        FakeBoothRepository(booths: (sort, query) async => fixtureBooths()),
+        const BoothSearchPage(),
       ),
       width: 390,
     );

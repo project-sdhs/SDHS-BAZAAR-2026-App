@@ -1,5 +1,4 @@
 import '../data/models/booth.dart';
-import '../data/models/popular_booth.dart';
 
 /// 부스 목록 정렬 기준 (APP-26).
 enum BoothSort {
@@ -48,27 +47,17 @@ class BoothSection {
 ///
 /// - [BoothSort.grade]: 1·2·3학년, 특별부스 순서로 구역을 만들고 구역 안은 반 번호 순입니다.
 ///   부스가 없는 구역은 만들지 않습니다.
-/// - [BoothSort.popular]: 구역 없이 `인기` 한 구역에 주문 수 순위대로 늘어놓습니다.
-///   인기 순위에 없는 부스는 뒤에 이름 순으로 붙습니다.
+/// - [BoothSort.popular]: 구역 없이 `인기` 한 구역에 서버가 준 순서(`GET /booths?sort=popular`,
+///   주문 수 순) 그대로 늘어놓습니다. [booths] 를 인기 순으로 받아 와야 합니다.
 List<BoothSection> buildBoothSections(
   List<Booth> booths, {
   required BoothSort sort,
   required BoothGradeFilter filter,
-  List<PopularBooth> popular = const [],
 }) {
   final visible = booths.where(filter.accepts).toList();
   if (visible.isEmpty) return const [];
 
   if (sort == BoothSort.popular) {
-    final rankById = {for (final item in popular) item.boothId: item.rank};
-    visible.sort((a, b) {
-      final rankA = rankById[a.id];
-      final rankB = rankById[b.id];
-      if (rankA != null && rankB != null) return rankA.compareTo(rankB);
-      if (rankA != null) return -1;
-      if (rankB != null) return 1;
-      return a.name.compareTo(b.name);
-    });
     return [BoothSection(title: '인기', booths: visible)];
   }
 
@@ -90,27 +79,4 @@ List<BoothSection> buildBoothSections(
     }
   }
   return sections;
-}
-
-/// 검색어와 맞는 부스를 찾습니다 (APP-38).
-///
-/// 검색어를 공백으로 나눈 낱말이 모두 부스 이름 · 반 이름 · 분류 · 위치 안에 들어 있으면
-/// 맞는 것으로 봅니다. 대소문자와 공백 차이는 무시합니다.
-/// 메뉴 이름은 부스 목록 응답에 없어서 여기서는 찾지 않습니다.
-List<Booth> searchBooths(List<Booth> booths, String query) {
-  final tokens = query
-      .toLowerCase()
-      .split(RegExp(r'\s+'))
-      .where((token) => token.isNotEmpty)
-      .toList();
-  if (tokens.isEmpty) return const [];
-  return booths.where((booth) {
-    final haystack = [
-      booth.name,
-      booth.boothClass?.name ?? '',
-      booth.category,
-      booth.locationLabel,
-    ].join(' ').toLowerCase().replaceAll(RegExp(r'\s+'), '');
-    return tokens.every(haystack.contains);
-  }).toList();
 }

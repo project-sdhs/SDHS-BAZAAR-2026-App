@@ -35,16 +35,16 @@ class BoothView extends StatelessWidget {
     super.key,
     required this.name,
     required this.category,
-    required this.locationLabel,
-    required this.minPrice,
+    this.locationLabel,
+    this.minPrice,
     this.size = BoothViewSize.list,
     this.thumbnail,
-    this.orderCount,
+    this.trailingLabel,
     this.rank,
     this.onTap,
     this.fallbackColor = AppColors.body,
   }) : assert(rank == null || rank > 0),
-       assert(minPrice >= 0);
+       assert(minPrice == null || minPrice >= 0);
 
   /// 부스 이름. 한 줄을 넘으면 `…` 로 줄입니다.
   final String name;
@@ -52,18 +52,20 @@ class BoothView extends StatelessWidget {
   /// 분류 배지에 적을 글자 (예: `간식`)
   final String category;
 
-  /// 위치 (예: `신관 2층 복도`)
-  final String locationLabel;
+  /// 위치 (예: `신관 2층 복도`). null 이면(위치 미정) 그 자리를 비웁니다.
+  final String? locationLabel;
 
   /// 메뉴 중 가장 싼 가격 (크레딧). `1,000~` 처럼 보입니다.
-  final int minPrice;
+  /// null 이면(판매 중인 메뉴가 없음) 가격을 숨깁니다.
+  final int? minPrice;
   final BoothViewSize size;
 
   /// 카드 배경으로 깔 그림. 없거나 불러오지 못하면 [fallbackColor] 를 씁니다.
   final ImageProvider? thumbnail;
 
-  /// 주문 수. null 이면 숨깁니다.
-  final int? orderCount;
+  /// 카드 오른쪽 끝에 적을 글자. 화면마다 달라서 문자열로 받습니다
+  /// (예: `주문 128` · `메뉴 9개` · `도보 1분`). null 이면 숨깁니다.
+  final String? trailingLabel;
 
   /// 1부터 시작하는 순위. null 이면 순위 배지를 숨깁니다.
   final int? rank;
@@ -97,7 +99,7 @@ class BoothView extends StatelessWidget {
                 category: category,
                 locationLabel: locationLabel,
                 minPrice: minPrice,
-                orderCount: orderCount,
+                trailingLabel: trailingLabel,
               ),
             ),
           ],
@@ -126,9 +128,9 @@ class BoothView extends StatelessWidget {
       ?(rank == null ? null : '$rank위'),
       name,
       category,
-      locationLabel,
-      '${AppCreditAmount.format(minPrice)}크레딧부터',
-      ?(orderCount == null ? null : '주문 $orderCount'),
+      ?locationLabel,
+      ?(minPrice == null ? null : '${AppCreditAmount.format(minPrice!)}크레딧부터'),
+      ?trailingLabel,
     ];
     return parts.join(', ');
   }
@@ -194,14 +196,14 @@ class _InfoPanel extends StatelessWidget {
     required this.category,
     required this.locationLabel,
     required this.minPrice,
-    required this.orderCount,
+    required this.trailingLabel,
   });
 
   final String name;
   final String category;
-  final String locationLabel;
-  final int minPrice;
-  final int? orderCount;
+  final String? locationLabel;
+  final int? minPrice;
+  final String? trailingLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -223,15 +225,17 @@ class _InfoPanel extends StatelessWidget {
               children: [
                 Row(
                   spacing: AppSpacing.s8,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Flexible(
+                    // 이름이 가격을 뺀 남은 폭을 모두 씁니다 (Figma 이름 칸 171).
+                    Expanded(
                       child: Text(
                         name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.body.copyWith(
                           fontSize: 17,
+                          // Figma 첫 줄 높이 20 (기본 1.5배면 26 이 되어 띠가 76 으로 커짐)
+                          height: 20 / 17,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.17,
                           color: AppColors.onPrimary,
@@ -239,40 +243,51 @@ class _InfoPanel extends StatelessWidget {
                       ),
                     ),
                     // 가격이 아주 길어도 한 줄에 맞게 줄어듭니다.
-                    Flexible(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerRight,
-                        child: AppCreditAmount(
-                          amount: minPrice,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.onPrimary,
-                          suffix: '~',
+                    if (minPrice case final price?)
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 120),
+                        // 가격 글자의 기본 줄 높이(약 23)가 이름 줄(20)보다 커서 띠가 3 커지므로
+                        // 줄 높이를 20 에 맞춥니다.
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: DefaultTextStyle.merge(
+                            style: const TextStyle(height: 20 / 16),
+                            child: AppCreditAmount(
+                              amount: price,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.onPrimary,
+                              suffix: '~',
+                            ),
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 ConstrainedBox(
                   constraints: const BoxConstraints(minHeight: 20),
                   child: Row(
-                    spacing: AppSpacing.s8,
+                    spacing: AppSpacing.s6,
                     children: [
                       _CategoryBadge(label: category),
+                      // 위치가 남는 폭을 모두 쓰고, 오른쪽 글자는 카드 오른쪽 끝에 붙습니다.
                       Expanded(
-                        child: Text(
-                          locationLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _meta,
-                        ),
+                        child: locationLabel == null
+                            ? const SizedBox.shrink()
+                            : Text(
+                                locationLabel!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: _meta,
+                              ),
                       ),
-                      if (orderCount case final count?)
-                        Flexible(
+                      if (trailingLabel case final label?)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 100),
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: Text('주문 $count', style: _meta),
+                            child: Text(label, style: _meta),
                           ),
                         ),
                     ],

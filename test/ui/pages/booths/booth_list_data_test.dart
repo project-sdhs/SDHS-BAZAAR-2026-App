@@ -1,30 +1,31 @@
 import 'package:bazaar_app/data/models/booth.dart';
-import 'package:bazaar_app/data/models/popular_booth.dart';
+import 'package:bazaar_app/data/repositories/booth_repository.dart';
+import 'package:bazaar_app/state/booth_list_logic.dart';
 import 'package:bazaar_app/ui/components/basic/basic.dart';
 import 'package:bazaar_app/ui/components/booth_view/booth_views.dart';
 import 'package:bazaar_app/ui/components/credit_amount/credit_amount.dart';
-import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
+import 'package:bazaar_app/ui/pages/booths/widgets/booth_list_header.dart';
 import 'package:bazaar_app/ui/pages/booths/booths_page.dart';
-import 'package:bazaar_app/ui/pages/booths/widgets/booth_search_result_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 import '../../../support/booth_fixtures.dart';
+import '../../../support/fake_booth_repository.dart';
+
+Widget _app(Widget page) => Provider<BoothRepository>.value(
+  value: FakeBoothRepository(),
+  child: MaterialApp(home: page),
+);
 
 Future<void> _pumpList(
   WidgetTester tester, {
-  Future<List<Booth>> Function()? loadBooths,
-  Future<List<PopularBooth>> Function()? loadPopular,
+  Future<List<Booth>> Function(BoothSort sort)? loadBooths,
 }) async {
   await tester.binding.setSurfaceSize(const Size(390, 1400));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
-    MaterialApp(
-      home: BoothsPage(
-        loadBooths: loadBooths ?? () async => fixtureBooths(),
-        loadPopularBooths: loadPopular ?? () async => const [],
-      ),
-    ),
+    _app(BoothsPage(loadBooths: loadBooths ?? (_) async => fixtureBooths())),
   );
   await tester.pumpAndSettle();
 }
@@ -57,7 +58,7 @@ void main() {
 
     testWidgets('열려 있는 부스 수를 헤더에 보여 준다', (tester) async {
       await _pumpList(tester);
-      expect(find.text('학년별 4곳이 열려 있어요'), findsOneWidget);
+      expect(find.text('학년별로 4곳이 열려 있어요'), findsOneWidget);
     });
 
     testWidgets('학년 칩을 누르면 그 학년만 보인다', (tester) async {
@@ -72,31 +73,99 @@ void main() {
       expect(_cardNames(tester), ['학생회 포토부스']);
     });
 
-    testWidgets('인기 순을 누르면 인기 순위대로 놓는다', (tester) async {
+    testWidgets('인기 순을 누르면 서버가 인기 순으로 준 순서대로 놓는다', (tester) async {
+      final requested = <BoothSort>[];
       await _pumpList(
         tester,
-        loadPopular: () async => const [
-          PopularBooth(rank: 1, boothId: 4, name: 'x', paymentCount: 128),
-          PopularBooth(rank: 2, boothId: 2, name: 'x', paymentCount: 97),
-        ],
+        loadBooths: (sort) async {
+          requested.add(sort);
+          // 인기 순은 서버가 주문 수 순으로 정렬해 준 목록
+          return sort == BoothSort.popular
+              ? fixtureBooths().reversed.toList()
+              : fixtureBooths();
+        },
       );
+      expect(requested, [BoothSort.grade]);
 
       await tester.tap(find.text('인기 순'));
       await tester.pumpAndSettle();
 
-      expect(_cardNames(tester).take(2), ['3-1 로제떡볶이', '2-3 타코야끼']);
+      expect(requested, [BoothSort.grade, BoothSort.popular]);
+      expect(
+        _cardNames(tester),
+        fixtureBooths().reversed.map((booth) => booth.name).toList(),
+      );
+
+      // 다시 학년 순으로 돌아오면 이미 가져온 목록을 다시 요청하지 않는다.
+      await tester.tap(find.text('학년 순'));
+      await tester.pumpAndSettle();
+      expect(requested, hasLength(2));
     });
 
-    testWidgets('인기 정보를 못 가져와도 목록은 보여 준다', (tester) async {
+    testWidgets('카드 오른쪽 아래에 메뉴 N개를 보여 준다', (tester) async {
+      await _pumpList(tester);
+      expect(find.text('메뉴 3개'), findsWidgets);
+    });
+
+    testWidgets('위치와 가격이 null 인 부스도 카드를 그리고 그 자리는 숨긴다', (tester) async {
       await _pumpList(
         tester,
-        loadPopular: () async => throw Exception('서버 오류'),
+        loadBooths: (_) async => [
+          fixtureBooth(
+            id: 1,
+            name: '1-1 준비 중',
+            grade: 1,
+            location: null,
+            minPrice: null,
+            status: BoothStatus.preparing,
+          ),
+        ],
       );
-      await tester.tap(find.text('인기 순'));
+      expect(tester.takeException(), isNull);
+      expect(find.text('1-1 준비 중'), findsOneWidget);
+      expect(find.byType(AppCreditAmount), findsNothing);
+      expect(find.text('0곳'), findsNothing);
+    });
+
+    testWidgets('칩 줄 아래 24 에 첫 학년 제목, 제목 아래 12 에 첫 카드 (Figma)', (tester) async {
+      await _pumpList(tester);
+      final chips = tester.getRect(find.byType(AppChip).first);
+      final title = tester.getRect(find.text('1학년').last);
+      final card = tester.getRect(find.byType(BoothView).first);
+      expect(title.top - chips.bottom, closeTo(24, 1));
+      expect(card.top - title.bottom, closeTo(12, 1.5));
+    });
+
+    testWidgets('헤더 · 정렬 · 칩도 목록과 같이 스크롤된다', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _app(BoothsPage(loadBooths: (_) async => fixtureBooths())),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(BoothSearchEntry), findsOneWidget);
+
+      await tester.drag(find.byType(ListView).first, const Offset(0, -400));
       await tester.pumpAndSettle();
 
-      expect(_cardNames(tester), isNotEmpty);
-      expect(find.textContaining('불러오지 못했어요'), findsNothing);
+      // 헤더가 위로 밀려 나갔다 (고정되어 있지 않다).
+      expect(find.byType(BoothSearchEntry), findsNothing);
+    });
+
+    testWidgets('필터에 맞는 부스가 없으면 그 칸에 맞춰 안내한다', (tester) async {
+      await _pumpList(
+        tester,
+        loadBooths: (_) async => [fixtureBooth(id: 1, name: '1-1 A', grade: 1)],
+      );
+      await tester.tap(find.widgetWithText(AppChip, '3학년'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('3학년에는 표시할 부스가 없어요'), findsOneWidget);
+    });
+
+    testWidgets('전체인데 부스가 0곳이면 다른 학년을 고르라고 하지 않는다', (tester) async {
+      await _pumpList(tester, loadBooths: (_) async => const []);
+      expect(find.textContaining('다른 칸'), findsNothing);
+      expect(find.text('아직 등록된 부스가 없어요'), findsOneWidget);
     });
 
     testWidgets('불러오는 동안 카드 자리 표시를 보여 준다', (tester) async {
@@ -106,14 +175,7 @@ void main() {
       );
       await tester.binding.setSurfaceSize(const Size(390, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.pumpWidget(
-        MaterialApp(
-          home: BoothsPage(
-            loadBooths: () => completer,
-            loadPopularBooths: () async => const [],
-          ),
-        ),
-      );
+      await tester.pumpWidget(_app(BoothsPage(loadBooths: (_) => completer)));
 
       expect(find.byType(AppSkeleton), findsNWidgets(2));
       expect(find.byType(BoothView), findsNothing);
@@ -126,7 +188,7 @@ void main() {
       var calls = 0;
       await _pumpList(
         tester,
-        loadBooths: () async {
+        loadBooths: (_) async {
           calls++;
           if (calls == 1) throw Exception('서버 오류');
           return fixtureBooths();
@@ -142,110 +204,8 @@ void main() {
     });
 
     testWidgets('부스가 하나도 없으면 안내를 보여 준다', (tester) async {
-      await _pumpList(tester, loadBooths: () async => const []);
+      await _pumpList(tester, loadBooths: (_) async => const []);
       expect(find.text('표시할 부스가 없어요'), findsOneWidget);
-    });
-  });
-
-  group('검색 결과 (APP-38)', () {
-    Future<void> pumpSearch(
-      WidgetTester tester, {
-      Future<List<Booth>> Function()? loadBooths,
-    }) async {
-      await tester.binding.setSurfaceSize(const Size(390, 1000));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.pumpWidget(
-        MaterialApp(
-          home: BoothSearchPage(
-            loadBooths: loadBooths ?? () async => fixtureBooths(),
-            loadPopularBooths: () async => const [],
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-    }
-
-    testWidgets('검색어를 입력하면 맞는 부스와 `검색 결과 N` 을 보여 준다', (tester) async {
-      await pumpSearch(tester);
-
-      await tester.enterText(find.byType(TextField), '2학년');
-      await tester.pumpAndSettle();
-
-      expect(find.text('검색 결과 2'), findsOneWidget);
-      expect(find.byType(BoothSearchResultRow), findsNWidgets(2));
-      expect(find.text('2-3 타코야끼'), findsOneWidget);
-      expect(find.text('실시간 인기 검색'), findsNothing);
-    });
-
-    testWidgets('맞는 부스가 없으면 결과 없음 안내를 보여 준다', (tester) async {
-      await pumpSearch(tester);
-
-      await tester.enterText(find.byType(TextField), '없는부스');
-      await tester.pumpAndSettle();
-
-      expect(find.text('검색 결과가 없어요'), findsOneWidget);
-      expect(find.byType(BoothSearchResultRow), findsNothing);
-    });
-
-    testWidgets('결과 행은 사진 56 · 행 높이 80 · 가격을 보여 준다', (tester) async {
-      await pumpSearch(tester);
-      await tester.enterText(find.byType(TextField), '로제');
-      await tester.pumpAndSettle();
-
-      expect(tester.getSize(find.byType(BoothSearchResultRow)).height, 80);
-      expect(find.text('3-1 로제떡볶이'), findsOneWidget);
-      expect(find.text('분식'), findsOneWidget);
-      expect(find.text('본관 1층 로비'), findsOneWidget);
-      final price = tester.widget<AppCreditAmount>(
-        find.byType(AppCreditAmount),
-      );
-      expect(price.amount, 1500);
-      expect(price.suffix, '~');
-    });
-
-    testWidgets('결과를 불러오는 동안 행 자리 표시를 보여 준다', (tester) async {
-      final slow = Future<List<Booth>>.delayed(
-        const Duration(milliseconds: 50),
-        fixtureBooths,
-      );
-      await pumpSearch(tester, loadBooths: () => slow);
-      await tester.enterText(find.byType(TextField), '타코');
-      await tester.pump();
-
-      expect(find.byType(AppSkeleton), findsNWidgets(6));
-      await tester.pumpAndSettle();
-      expect(find.byType(AppSkeleton), findsNothing);
-      expect(find.byType(BoothSearchResultRow), findsOneWidget);
-    });
-
-    testWidgets('입력을 지우면 최근 검색어 영역으로 돌아온다', (tester) async {
-      await pumpSearch(tester);
-      await tester.enterText(find.byType(TextField), '타코');
-      await tester.pumpAndSettle();
-      expect(find.byType(BoothSearchResultRow), findsOneWidget);
-
-      await tester.tap(find.byTooltip('검색어 지우기'));
-      await tester.pumpAndSettle();
-      expect(find.byType(BoothSearchResultRow), findsNothing);
-    });
-
-    testWidgets('부스를 못 불러오면 안내하고 다시 시도한다', (tester) async {
-      var calls = 0;
-      await pumpSearch(
-        tester,
-        loadBooths: () async {
-          calls++;
-          if (calls == 1) throw Exception('서버 오류');
-          return fixtureBooths();
-        },
-      );
-      await tester.enterText(find.byType(TextField), '타코');
-      await tester.pumpAndSettle();
-      expect(find.text('검색할 부스를 불러오지 못했어요'), findsOneWidget);
-
-      await tester.tap(find.text('다시 시도'));
-      await tester.pumpAndSettle();
-      expect(find.byType(BoothSearchResultRow), findsOneWidget);
     });
   });
 }
