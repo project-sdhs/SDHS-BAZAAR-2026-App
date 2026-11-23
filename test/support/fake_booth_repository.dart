@@ -7,17 +7,18 @@ import 'package:bazaar_app/data/repositories/booth_repository.dart';
 class FakeBoothRepository extends BoothRepository {
   FakeBoothRepository({
     Future<List<PopularBooth>> Function()? popular,
-    Future<List<Booth>> Function(String sort)? booths,
+    Future<List<Booth>> Function(String sort, String? query)? booths,
   }) : _popular = popular ?? (() async => const []),
-       _booths = booths ?? ((sort) async => const []),
+       _booths = booths ?? ((sort, query) async => const []),
        super(ApiClient());
 
   final Future<List<PopularBooth>> Function() _popular;
-  final Future<List<Booth>> Function(String sort) _booths;
+  final Future<List<Booth>> Function(String sort, String? query) _booths;
 
   @override
   Future<List<PopularBooth>> popularBooths() => _popular();
 
   @override
-  Future<List<Booth>> booths({String sort = 'grade'}) => _booths(sort);
+  Future<List<Booth>> booths({String sort = 'grade', String? query}) =>
+      _booths(sort, query);
 }

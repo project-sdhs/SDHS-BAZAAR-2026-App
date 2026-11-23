@@ -141,6 +141,23 @@ void main() {
     expect(seen!.queryParameters['sort'], 'popular');
   });
 
+  test('booths(query) 는 q 를 trim 해서 보내고 빈 검색어는 보내지 않는다', () async {
+    final seen = <Uri>[];
+    final repo = BoothRepository(
+      ApiClient(
+        baseUrl: 'http://test',
+        httpClient: MockClient((request) async {
+          seen.add(request.url);
+          return http.Response('{"items": []}', 200);
+        }),
+      ),
+    );
+    await repo.booths(query: '  타코 ');
+    await repo.booths(query: '   ');
+    expect(seen[0].queryParameters['q'], '타코');
+    expect(seen[1].queryParameters.containsKey('q'), isFalse);
+  });
+
   test('booths() 는 items 를 부스 목록으로 돌려준다', () async {
     final booths = await _repo({
       'items': [_normal, _special],
