@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'core/router/app_router.dart';
+import 'app_providers.dart';
 import 'core/theme/app_theme.dart';
 import 'state/credit_store.dart';
 
@@ -34,13 +35,15 @@ class _BazaarAppState extends State<BazaarApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _creditStore,
-      child: MaterialApp.router(
-        title: '디지텍 바자회',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        routerConfig: _router,
+    return AppProviders(
+      child: ChangeNotifierProvider.value(
+        value: _creditStore,
+        child: MaterialApp.router(
+          title: '디지텍 바자회',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          routerConfig: _router,
+        ),
       ),
     );
   }

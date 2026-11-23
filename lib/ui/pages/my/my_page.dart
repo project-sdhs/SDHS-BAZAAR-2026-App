@@ -6,13 +6,16 @@ import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../data/models/my_user.dart';
 import '../../../state/credit_store.dart';
 import '../../components/basic/basic.dart';
 import '../../components/buttons/buttons.dart';
 import '../../components/credit_amount/credit_amounts.dart';
+import 'widgets/my_profile.dart';
 
 class MyPage extends StatelessWidget {
-  const MyPage({super.key});
+  const MyPage({super.key, this.user = mockStudent});
+  final MyUser user;
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +23,9 @@ class MyPage extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.s16),
+          padding: const EdgeInsets.all(AppSpacing.screenHorizontal),
           children: [
-            const Text('마이', style: AppTypography.h3),
+            MyProfile(user: user),
             const SizedBox(height: AppSpacing.s24),
             Container(
               padding: const EdgeInsets.all(AppSpacing.s16),
