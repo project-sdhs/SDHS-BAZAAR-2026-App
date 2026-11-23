@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../data/models/booth.dart';
+import '../../../../data/models/booth_detail.dart';
 import '../../../components/basic/basic.dart';
 
 class BoothInfoHeader extends StatelessWidget {
@@ -11,7 +11,7 @@ class BoothInfoHeader extends StatelessWidget {
 
   static const double imageAspectRatio = 296 / 148;
 
-  final Booth booth;
+  final BoothDetail booth;
 
   @override
   Widget build(BuildContext context) {

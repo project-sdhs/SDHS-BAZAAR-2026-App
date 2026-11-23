@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../data/models/booth.dart';
+import '../../../../data/models/booth_detail.dart';
 import '../../../components/basic/basic.dart';
 
 class BoothOperatorSection extends StatelessWidget {

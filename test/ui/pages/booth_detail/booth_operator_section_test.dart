@@ -1,4 +1,4 @@
-import 'package:bazaar_app/data/models/booth.dart';
+import 'package:bazaar_app/data/models/booth_detail.dart';
 import 'package:bazaar_app/ui/components/basic/basic.dart';
 import 'package:bazaar_app/ui/pages/booth_detail/widgets/booth_operator_tile.dart';
 import 'package:flutter/material.dart';
@@ -54,7 +54,7 @@ void main() {
   });
 
   test('운영진 JSON 을 변환하고 없으면 빈 목록이다', () {
-    final booth = Booth.fromJson({
+    final booth = BoothDetail.fromJson({
       'id': 'b1',
       'name': '2-3 타코야끼',
       'className': '2학년 3반',
@@ -68,9 +68,9 @@ void main() {
 
     expect(booth.operators.single.name, '김서연');
     expect(booth.operators.single.role, '반장');
-    expect(Booth.fromJson(booth.toJson()).operators.single.role, '반장');
+    expect(BoothDetail.fromJson(booth.toJson()).operators.single.role, '반장');
 
-    final withoutOperators = Booth.fromJson({
+    final withoutOperators = BoothDetail.fromJson({
       'id': 'b2',
       'name': '1-1 떡볶이',
       'className': '1학년 1반',
