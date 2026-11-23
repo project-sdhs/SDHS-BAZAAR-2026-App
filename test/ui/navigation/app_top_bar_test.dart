@@ -1,3 +1,4 @@
+import 'package:bazaar_app/app_providers.dart';
 import 'package:bazaar_app/ui/navigation/app_top_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,7 +16,9 @@ Future<void> pumpTopBar(WidgetTester tester, {VoidCallback? onShare}) async {
     ],
   );
   addTearDown(router.dispose);
-  await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+  await tester.pumpWidget(
+    AppProviders(child: MaterialApp.router(routerConfig: router)),
+  );
   await tester.pumpAndSettle();
 }
 

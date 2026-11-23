@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/router/routes.dart';
-import '../../../data/repositories/recent_search_store.dart';
 import '../../../state/recent_search_state.dart';
 import 'widgets/booth_search_bar.dart';
 import 'widgets/recent_searches_section.dart';
@@ -12,10 +12,7 @@ import 'widgets/recent_searches_section.dart';
 /// 검색어가 비어 있으면 최근 검색어(APP-39)를 보여 줍니다.
 /// 인기 검색 · 검색 결과는 이후 티켓에서 붙입니다.
 class BoothSearchPage extends StatefulWidget {
-  const BoothSearchPage({super.key, this.recentSearches});
-
-  /// 최근 검색어 상태. 없으면 앱을 끄면 사라지는 메모리 저장소를 씁니다.
-  final RecentSearchState? recentSearches;
+  const BoothSearchPage({super.key});
 
   @override
   State<BoothSearchPage> createState() => _BoothSearchPageState();
@@ -23,23 +20,19 @@ class BoothSearchPage extends StatefulWidget {
 
 class _BoothSearchPageState extends State<BoothSearchPage> {
   final _controller = TextEditingController();
-  late final RecentSearchState _recent;
-  late final bool _ownsRecent;
+
+  /// 앱 전체에서 한 번만 만든 최근 검색어 (`AppProviders`). 화면을 닫아도 남습니다.
+  RecentSearchState get _recent => context.read<RecentSearchState>();
 
   @override
   void initState() {
     super.initState();
-    _ownsRecent = widget.recentSearches == null;
-    _recent =
-        widget.recentSearches ?? RecentSearchState(MemoryRecentSearchStore());
-    _recent.load();
     _controller.addListener(_rebuild);
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    if (_ownsRecent) _recent.dispose();
     super.dispose();
   }
 
@@ -86,13 +79,12 @@ class _BoothSearchPageState extends State<BoothSearchPage> {
                 child: ListView(
                   padding: const EdgeInsets.only(top: 16),
                   children: [
-                    ListenableBuilder(
-                      listenable: _recent,
-                      builder: (context, _) => RecentSearchesSection(
-                        keywords: _recent.keywords,
+                    Consumer<RecentSearchState>(
+                      builder: (context, recent, _) => RecentSearchesSection(
+                        keywords: recent.keywords,
                         onSelected: _searchAgain,
-                        onRemoved: _recent.remove,
-                        onClearAll: _recent.clear,
+                        onRemoved: recent.remove,
+                        onClearAll: recent.clear,
                       ),
                     ),
                   ],

@@ -1,16 +1,25 @@
+import 'package:bazaar_app/app_providers.dart';
+import 'package:bazaar_app/core/router/app_router.dart';
+import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/data/repositories/recent_search_store.dart';
 import 'package:bazaar_app/state/recent_search_state.dart';
 import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
+import 'package:bazaar_app/ui/pages/booths/widgets/booth_list_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 Future<RecentSearchState> _pump(
   WidgetTester tester, {
   List<String> recent = const [],
 }) async {
   final state = RecentSearchState(MemoryRecentSearchStore(recent));
+  await state.load();
   await tester.pumpWidget(
-    MaterialApp(home: BoothSearchPage(recentSearches: state)),
+    ChangeNotifierProvider<RecentSearchState>.value(
+      value: state,
+      child: const MaterialApp(home: BoothSearchPage()),
+    ),
   );
   await tester.pumpAndSettle();
   return state;
@@ -86,7 +95,9 @@ void main() {
   });
 
   testWidgets('검색 화면을 닫은 뒤에 저장이 끝나도 오류가 나지 않는다', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: BoothSearchPage()));
+    await tester.pumpWidget(
+      const AppProviders(child: MaterialApp(home: BoothSearchPage())),
+    );
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), '타코');
@@ -95,5 +106,52 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('검색 화면을 닫았다 다시 열어도 최근 검색어가 남는다', (tester) async {
+    final router = createAppRouter(initialLocation: Routes.booths);
+    await tester.pumpWidget(
+      AppProviders(child: MaterialApp.router(routerConfig: router)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(BoothSearchEntry));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '타코야끼');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+    expect(find.byType(BoothSearchPage), findsNothing);
+
+    await tester.tap(find.byType(BoothSearchEntry));
+    await tester.pumpAndSettle();
+    expect(find.text('최근 검색어'), findsOneWidget);
+    expect(find.text('타코야끼'), findsOneWidget);
+  });
+
+  testWidgets('최근 검색어 칩 간격은 8 이고 제목과 칩 사이는 12 (Figma)', (tester) async {
+    await _pump(tester, recent: ['타코야끼', '떡볶이', '컵밥']);
+    final title = tester.getRect(find.text('최근 검색어'));
+    final chip = tester.getRect(
+      find
+          .ancestor(of: find.text('타코야끼'), matching: find.byType(DecoratedBox))
+          .first,
+    );
+    final next = tester.getRect(
+      find
+          .ancestor(of: find.text('떡볶이'), matching: find.byType(DecoratedBox))
+          .first,
+    );
+    expect(chip.height, 38);
+    expect(chip.top - title.bottom, closeTo(12, 2));
+    // 같은 줄에서 오른쪽 칩의 왼쪽 끝과 왼쪽 칩의 오른쪽 끝 사이가 8
+    expect(next.top, chip.top);
+    expect(
+      (next.left - chip.right).abs() == 8 ||
+          (chip.left - next.right).abs() == 8,
+      isTrue,
+    );
   });
 }

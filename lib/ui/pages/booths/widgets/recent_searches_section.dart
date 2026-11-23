@@ -34,6 +34,7 @@ class RecentSearchesSection extends StatelessWidget {
       children: [
         SearchSectionTitle(
           '최근 검색어',
+          bottomSpacing: 12,
           trailing: Semantics(
             button: true,
             label: '최근 검색어 모두 지우기',
@@ -54,8 +55,8 @@ class RecentSearchesSection extends StatelessWidget {
             horizontal: AppSpacing.screenHorizontal,
           ),
           child: Wrap(
-            spacing: 12,
-            runSpacing: 12,
+            spacing: AppSpacing.s8,
+            runSpacing: AppSpacing.s8,
             children: [
               for (final keyword in keywords)
                 _KeywordChip(
@@ -101,7 +102,9 @@ class _KeywordChip extends StatelessWidget {
                 onTap: onTap,
                 child: Padding(
                   padding: const EdgeInsets.only(left: 14, right: 6),
+                  // widthFactor: 칩이 글자 너비만큼만 차지하게 합니다 (없으면 한 줄을 가득 채움).
                   child: Center(
+                    widthFactor: 1,
                     child: Text(
                       keyword,
                       maxLines: 1,
