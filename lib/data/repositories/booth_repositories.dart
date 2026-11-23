@@ -1,7 +1,5 @@
 import 'package:bazaar_app/data/api/api_client.dart';
 
-import 'package:http/http.dart';
-
 Future<int> fetchOpenBoothCount() async {
   final client = ApiClient();
 
