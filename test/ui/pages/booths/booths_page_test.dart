@@ -16,12 +16,23 @@ void main() {
       );
 
       expect(find.text('부스'), findsOneWidget);
-      expect(find.text('학년별 12곳이 열려 있어요'), findsOneWidget);
+      expect(find.text('학년별로 12곳이 열려 있어요'), findsOneWidget);
       expect(
-        tester.widget<Text>(find.text('학년별 12곳이 열려 있어요')).style!.fontSize,
+        tester.widget<Text>(find.text('학년별로 12곳이 열려 있어요')).style!.fontSize,
         16,
       );
       expect(find.text('반 · 부스 · 메뉴 검색'), findsOneWidget);
+    });
+
+    testWidgets('제목–부제 간격 6, 부제–검색 바 간격 20 (Figma)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(BoothListHeader(openBoothCount: 12, onSearchTap: () {})),
+      );
+      final title = tester.getRect(find.text('부스'));
+      final subtitle = tester.getRect(find.text('학년별로 12곳이 열려 있어요'));
+      final search = tester.getRect(find.byType(BoothSearchEntry));
+      expect(subtitle.top - title.bottom, 6);
+      expect(search.top - subtitle.bottom, 20);
     });
 
     testWidgets('부스 수를 모르면 안내 문장을 숨긴다', (tester) async {
