@@ -3,6 +3,8 @@ import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/core/theme/app_colors.dart';
 import 'package:bazaar_app/state/booth_list_logic.dart';
 import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
+import 'package:bazaar_app/ui/pages/booths/booths_page.dart';
+import 'package:bazaar_app/ui/components/basic/basic.dart';
 import 'package:bazaar_app/ui/pages/booths/widgets/booth_list_header.dart';
 import 'package:bazaar_app/ui/pages/booths/widgets/booth_sort_control.dart';
 import 'package:flutter/material.dart';
@@ -71,9 +73,50 @@ void main() {
       await tester.tap(find.text('인기 순'));
       expect(picked, [BoothSort.popular]);
     });
+
+    testWidgets('막대 높이는 48 (안쪽 칸 40) 이다 (Figma)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          Align(
+            alignment: Alignment.topLeft,
+            child: BoothSortControl(value: BoothSort.grade, onChanged: (_) {}),
+          ),
+        ),
+      );
+      expect(
+        tester.getSize(find.byType(AppSegmentedControl<BoothSort>)).height,
+        48,
+      );
+      final cell = find.ancestor(
+        of: find.text('학년 순'),
+        matching: find.byType(InkWell),
+      );
+      expect(tester.getSize(cell).height, 40);
+    });
   });
 
   group('부스 목록 화면', () {
+    testWidgets('인기 순을 누르면 선택 칸이 인기 순으로 바뀐다', (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: BoothsPage()));
+
+      Color? cellColor(String label) => tester
+          .widget<Material>(
+            find
+                .ancestor(of: find.text(label), matching: find.byType(Material))
+                .first,
+          )
+          .color;
+
+      expect(cellColor('학년 순'), AppColors.canvas);
+      expect(cellColor('인기 순'), AppColors.surface);
+
+      await tester.tap(find.text('인기 순'));
+      await tester.pump();
+
+      expect(cellColor('학년 순'), AppColors.surface);
+      expect(cellColor('인기 순'), AppColors.canvas);
+    });
+
     testWidgets('검색 바를 누르면 부스 검색 화면이 열리고 취소하면 돌아온다', (tester) async {
       final router = createAppRouter(initialLocation: Routes.booths);
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
