@@ -2,9 +2,10 @@ import 'package:bazaar_app/core/router/app_router.dart';
 import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/core/theme/app_colors.dart';
 import 'package:bazaar_app/state/booth_list_logic.dart';
+import 'package:bazaar_app/ui/components/basic/basic.dart';
 import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
 import 'package:bazaar_app/ui/pages/booths/booths_page.dart';
-import 'package:bazaar_app/ui/components/basic/basic.dart';
+import 'package:bazaar_app/ui/pages/booths/widgets/booth_grade_filter_chips.dart';
 import 'package:bazaar_app/ui/pages/booths/widgets/booth_list_header.dart';
 import 'package:bazaar_app/ui/pages/booths/widgets/booth_sort_control.dart';
 import 'package:flutter/material.dart';
@@ -95,7 +96,81 @@ void main() {
     });
   });
 
+  group('BoothGradeFilterChips (APP-27)', () {
+    testWidgets('전체 · 1~3학년 · 특별부스 칩을 보여 주고 선택된 칩만 켜진다', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          BoothGradeFilterChips(
+            value: BoothGradeFilter.grade2,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+
+      for (final label in ['전체', '1학년', '2학년', '3학년', '특별부스']) {
+        expect(find.text(label), findsOneWidget);
+      }
+      final selected = tester
+          .widgetList<AppChip>(find.byType(AppChip))
+          .where((chip) => chip.selected)
+          .map((chip) => chip.label);
+      expect(selected, ['2학년']);
+    });
+
+    testWidgets('칩 높이는 38 이고 좌우 16 · 칩 사이 8 이다 (Figma)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          BoothGradeFilterChips(value: BoothGradeFilter.all, onChanged: (_) {}),
+        ),
+      );
+      final first = tester.getRect(find.byType(AppChip).first);
+      final second = tester.getRect(find.byType(AppChip).at(1));
+      expect(first.height, 38);
+      expect(first.left, 16);
+      expect(second.left - first.right, 8);
+      expect(tester.getSize(find.byType(BoothGradeFilterChips)).height, 38);
+    });
+
+    testWidgets('칩을 누르면 해당 필터를 알린다', (tester) async {
+      final picked = <BoothGradeFilter>[];
+      await tester.pumpWidget(
+        _wrap(
+          BoothGradeFilterChips(
+            value: BoothGradeFilter.all,
+            onChanged: picked.add,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('특별부스'));
+      expect(picked, [BoothGradeFilter.special]);
+    });
+  });
+
   group('부스 목록 화면', () {
+    testWidgets('정렬 막대와 칩 줄 사이 보이는 간격은 16', (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: BoothsPage()));
+      final sort = tester.getRect(find.byType(AppSegmentedControl<BoothSort>));
+      final chips = tester.getRect(find.byType(AppChip).first);
+      expect(chips.top - sort.bottom, 16);
+    });
+
+    testWidgets('필터를 바꾸면 칩 선택이 따라 바뀐다', (tester) async {
+      final router = createAppRouter(initialLocation: Routes.booths);
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+
+      Iterable<String> selectedChips() => tester
+          .widgetList<AppChip>(find.byType(AppChip))
+          .where((chip) => chip.selected)
+          .map((chip) => chip.label);
+      expect(selectedChips(), ['전체']);
+
+      await tester.tap(find.text('3학년'));
+      await tester.pump();
+      expect(selectedChips(), ['3학년']);
+    });
+
     testWidgets('인기 순을 누르면 선택 칸이 인기 순으로 바뀐다', (tester) async {
       await tester.pumpWidget(const MaterialApp(home: BoothsPage()));
 

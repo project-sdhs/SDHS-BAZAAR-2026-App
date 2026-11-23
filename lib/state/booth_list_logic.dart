@@ -10,3 +10,16 @@ enum BoothSort {
 
   final String label;
 }
+
+/// 부스 목록을 거르는 학년 필터 (APP-27).
+enum BoothGradeFilter {
+  all('전체'),
+  grade1('1학년'),
+  grade2('2학년'),
+  grade3('3학년'),
+  special('특별부스');
+
+  const BoothGradeFilter(this.label);
+
+  final String label;
+}
