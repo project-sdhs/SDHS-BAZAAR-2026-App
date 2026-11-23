@@ -1,3 +1,4 @@
+import 'package:bazaar_app/app_providers.dart';
 import 'package:bazaar_app/core/router/app_router.dart';
 import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/ui/pages/booths/booth_search_page.dart';
@@ -271,7 +272,9 @@ void main() {
   group('BoothSearchPage 경로', () {
     testWidgets('검색 경로는 탭 바 없이 검색 화면을 연다', (tester) async {
       final router = createAppRouter(initialLocation: Routes.boothSearch);
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(
+        AppProviders(child: MaterialApp.router(routerConfig: router)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(BoothSearchPage), findsOneWidget);
@@ -280,7 +283,9 @@ void main() {
 
     testWidgets('이전 화면이 없을 때 취소하면 부스 탭으로 간다', (tester) async {
       final router = createAppRouter(initialLocation: Routes.boothSearch);
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(
+        AppProviders(child: MaterialApp.router(routerConfig: router)),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('취소'));

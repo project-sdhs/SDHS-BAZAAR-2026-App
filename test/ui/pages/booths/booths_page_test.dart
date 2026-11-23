@@ -1,3 +1,4 @@
+import 'package:bazaar_app/app_providers.dart';
 import 'package:bazaar_app/core/router/app_router.dart';
 import 'package:bazaar_app/core/router/routes.dart';
 import 'package:bazaar_app/core/theme/app_colors.dart';
@@ -157,7 +158,9 @@ void main() {
 
     testWidgets('필터를 바꾸면 칩 선택이 따라 바뀐다', (tester) async {
       final router = createAppRouter(initialLocation: Routes.booths);
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(
+        AppProviders(child: MaterialApp.router(routerConfig: router)),
+      );
       await tester.pumpAndSettle();
 
       Iterable<String> selectedChips() => tester
@@ -194,7 +197,9 @@ void main() {
 
     testWidgets('검색 바를 누르면 부스 검색 화면이 열리고 취소하면 돌아온다', (tester) async {
       final router = createAppRouter(initialLocation: Routes.booths);
-      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpWidget(
+        AppProviders(child: MaterialApp.router(routerConfig: router)),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(BoothSearchEntry));
