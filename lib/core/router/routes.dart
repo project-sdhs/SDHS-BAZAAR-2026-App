@@ -12,6 +12,9 @@ abstract final class Routes {
   static const String pay = '/pay';
   static const String map = '/map';
   static const String my = '/my';
+  static const String credit = '/credit';
+  static const String transactions = '/my/transactions';
+  static const String checkout = '/pay/checkout';
 
   /// 부스 검색 (하단 탭 바 없이 전체 화면)
   static const String boothSearch = '/booths/search';

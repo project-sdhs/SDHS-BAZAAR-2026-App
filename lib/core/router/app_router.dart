@@ -16,6 +16,10 @@ import '../../ui/pages/map/map_page.dart';
 import '../../ui/pages/my/my_page.dart';
 import '../../ui/pages/onboarding/onboarding_page.dart';
 import '../../ui/pages/pay/pay_page.dart';
+import '../../ui/pages/pay/checkout_page.dart';
+import '../../ui/pages/credit/credit_page.dart';
+import '../../ui/pages/transactions/transactions_page.dart';
+import '../../data/models/payment_models.dart';
 import '../../ui/pages/shell/main_shell.dart';
 import 'routes.dart';
 
@@ -42,6 +46,21 @@ GoRouter createAppRouter({String? initialLocation}) {
         // [뒤로 이동 수정] iOS에서 가장자리 스와이프를 지원
         pageBuilder: (context, state) =>
             MaterialPage<void>(key: state.pageKey, child: const LoginPage()),
+      ),
+      GoRoute(
+        path: Routes.credit,
+        builder: (context, state) => const CreditPage(),
+      ),
+      GoRoute(
+        path: Routes.transactions,
+        builder: (context, state) => const TransactionsPage(),
+      ),
+      GoRoute(
+        path: Routes.checkout,
+        redirect: (context, state) =>
+            state.extra is PaymentBooth ? null : Routes.pay,
+        builder: (context, state) =>
+            CheckoutPage(booth: state.extra! as PaymentBooth),
       ),
 
       GoRoute(
