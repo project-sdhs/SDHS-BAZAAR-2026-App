@@ -16,6 +16,10 @@ abstract final class Routes {
   /// 부스 검색 (하단 탭 바 없이 전체 화면)
   static const String boothSearch = '/booths/search';
 
+  static const String boothDetailPattern = '/booths/:boothId';
+
+  static String boothDetail(String boothId) => '$booths/$boothId';
+
   /// 버튼 카탈로그 (디버그 빌드에서만 등록됩니다)
   static const String devButtons = '/dev/buttons';
   static const String devBasics = '/dev/basics';

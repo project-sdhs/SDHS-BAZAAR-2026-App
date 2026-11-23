@@ -1,3 +1,4 @@
+import 'package:bazaar_app/app_providers.dart';
 import 'package:bazaar_app/ui/navigation/app_top_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,7 +16,9 @@ Future<void> pumpTopBar(WidgetTester tester, {VoidCallback? onShare}) async {
     ],
   );
   addTearDown(router.dispose);
-  await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+  await tester.pumpWidget(
+    AppProviders(child: MaterialApp.router(routerConfig: router)),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -38,5 +41,24 @@ void main() {
     await tester.tap(shareButton);
     expect(shareCount, 1);
     expect(find.byTooltip('뒤로가기'), findsNothing);
+  });
+
+  testWidgets('제목 없이 쓰면 버튼 줄만 그린다', (tester) async {
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) =>
+              Scaffold(body: AppTopBar(onShare: () {})),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('공유'), findsOneWidget);
+    expect(find.byType(Text), findsNothing);
+    expect(tester.getSize(find.byType(AppTopBar)).height, 49);
   });
 }

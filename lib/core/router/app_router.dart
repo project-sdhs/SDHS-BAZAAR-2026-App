@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../ui/pages/booth_detail/booth_detail_page.dart';
 import '../../ui/pages/booths/booth_search_page.dart';
 import '../../ui/pages/booths/booths_page.dart';
 import '../../ui/pages/dev/button_catalog_page.dart';
@@ -46,6 +47,15 @@ GoRouter createAppRouter({String? initialLocation}) {
       GoRoute(
         path: Routes.boothSearch,
         builder: (context, state) => const BoothSearchPage(),
+      ),
+
+      // `/booths/search` 보다 뒤에 둬야 search 가 boothId 로 잡히지 않아요.
+      GoRoute(
+        path: Routes.boothDetailPattern,
+        pageBuilder: (context, state) => MaterialPage<void>(
+          key: state.pageKey,
+          child: BoothDetailPage(boothId: state.pathParameters['boothId']!),
+        ),
       ),
 
       // 하단 탭 5개. 탭마다 화면 기록(스택)을 따로 기억합니다.
