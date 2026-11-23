@@ -3,6 +3,7 @@
 사용자에게 상태를 알려 주는 공통 위젯 (APP-09).
 
 - `AppEmptyState`: 결과가 없거나 표시할 항목이 없는 상태
+- `AppNotice`: 화면 안에 넣는 한 줄 안내 띠 (info · danger · neutral)
 - `AppToast.show`: 성공·오류 토스트
 - `AppDialog.show`: 확인·취소 다이얼로그
 - `AppBottomSheet.show`: 공통 모양의 모달 바텀시트

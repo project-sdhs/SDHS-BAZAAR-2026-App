@@ -7,4 +7,5 @@ library;
 export 'app_bottom_sheet.dart';
 export 'app_dialog.dart';
 export 'app_empty_state.dart';
+export 'app_notice.dart';
 export 'app_toast.dart';

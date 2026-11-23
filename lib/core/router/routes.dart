@@ -12,9 +12,18 @@ abstract final class Routes {
   static const String pay = '/pay';
   static const String map = '/map';
   static const String my = '/my';
+
+  /// 크레딧 충전 (하단 탭 바 없이 전체 화면)
   static const String credit = '/credit';
+
+  /// 거래 내역 (하단 탭 바 없이 전체 화면)
   static const String transactions = '/my/transactions';
+
+  /// QR 결제: 메뉴 고르기 → 결제 → 영수증. `extra` 로 `QrPayInfo` 를 넘깁니다 (없으면 QR 탭으로).
   static const String checkout = '/pay/checkout';
+
+  /// QR 결제: 주문을 멈췄거나 운영 시간이 아닌 부스 안내. `extra` 로 `BoothPauseNotice` 를 넘깁니다.
+  static const String payPaused = '/pay/paused';
 
   /// 부스 검색 (하단 탭 바 없이 전체 화면)
   static const String boothSearch = '/booths/search';
