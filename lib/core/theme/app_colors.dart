@@ -28,4 +28,7 @@ abstract final class AppColors {
 
   // 이미지가 들어갈 자리 (일러스트 대체 박스 등)
   static const Color placeholder = Color(0xFFE9ECF0);
+
+  /// 사진 위에 깔아 글자를 읽기 쉽게 하는 어두운 막 (부스 카드의 정보 띠 · 순위 배지)
+  static const Color scrim = Color(0xFF11161E);
 }

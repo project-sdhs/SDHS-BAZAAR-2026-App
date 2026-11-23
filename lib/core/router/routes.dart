@@ -19,4 +19,7 @@ abstract final class Routes {
 
   /// 입력 · 피드백 카탈로그 (디버그 빌드에서만 등록됩니다)
   static const String devInputFeedback = '/dev/input-feedback';
+
+  /// 부스 카드(BoothView) 카탈로그 (디버그 빌드에서만 등록됩니다)
+  static const String devBoothView = '/dev/booth-view';
 }

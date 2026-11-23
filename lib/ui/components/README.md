@@ -4,4 +4,5 @@
 - `buttons/` — `AppButton`, `BottomCTA` (`buttons.dart` 하나만 import 하면 됩니다)
 - `inputs/` — 텍스트 필드, 검색 필드 (`inputs.dart`)
 - `feedback/` — 빈 상태, 토스트, 다이얼로그, 바텀시트 (`feedback.dart`)
+- `booth_view/` — `BoothView` 부스 카드 3종 크기 (`booth_views.dart`)
 - `credit_amount/` — `AppCreditAmount` (`credit_amounts.dart`에서 가져옵니다)
