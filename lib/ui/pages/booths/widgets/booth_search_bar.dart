@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -24,6 +25,9 @@ class BoothSearchBar extends StatelessWidget {
 
   static const double height = 56;
 
+  /// 서버 검색어(`GET /booths` 의 `q`)는 trim 한 뒤 1~30자라서 넘기면 400 이 납니다.
+  static const int maxQueryLength = 30;
+
   final TextEditingController controller;
 
   /// 입력할 때, 그리고 지우기 버튼으로 비울 때(빈 문자열) 호출됩니다.
@@ -39,8 +43,10 @@ class BoothSearchBar extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: height),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.screenHorizontal,
+        // 오른쪽은 `취소` 의 누르는 영역 좌우 8 이 여백 안으로 들어가므로 16 - 8.
+        padding: const EdgeInsets.only(
+          left: AppSpacing.screenHorizontal,
+          right: AppSpacing.screenHorizontal - AppSpacing.s8,
         ),
         child: Row(
           spacing: AppSpacing.s8,
@@ -51,6 +57,9 @@ class BoothSearchBar extends StatelessWidget {
                 hintText: '반 · 부스 · 메뉴 검색',
                 compact: true,
                 autofocus: autofocus,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(maxQueryLength),
+                ],
                 onChanged: onChanged,
                 onSubmitted: onSubmitted,
               ),

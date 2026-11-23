@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -36,6 +37,7 @@ class AppTextField extends StatefulWidget {
     this.compact = false,
     this.keyboardType,
     this.textInputAction,
+    this.inputFormatters,
     this.onChanged,
     this.onSubmitted,
     this.prefixIcon,
@@ -94,6 +96,9 @@ class AppTextField extends StatefulWidget {
   final bool compact;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
+
+  /// 입력 글자 제한 (예: 글자 수). 기본은 없음.
+  final List<TextInputFormatter>? inputFormatters;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final IconData? prefixIcon;
@@ -189,6 +194,7 @@ class _AppTextFieldState extends State<AppTextField> {
             autofocus: widget.autofocus,
             keyboardType: widget.keyboardType,
             textInputAction: widget.textInputAction,
+            inputFormatters: widget.inputFormatters,
             onChanged: widget.onChanged,
             onFieldSubmitted: widget.onSubmitted,
             obscureText: widget.obscureText,
@@ -240,7 +246,8 @@ class _AppTextFieldState extends State<AppTextField> {
                   : Padding(
                       padding: EdgeInsets.only(
                         left: isCompact ? 14 : 0,
-                        right: isCompact ? AppSpacing.s8 : 0,
+                        // 입력창이 아이콘 뒤에 4 를 더 두므로 합쳐서 아이콘–글자 간격 8
+                        right: isCompact ? AppSpacing.s4 : 0,
                       ),
                       child: Icon(
                         widget.prefixIcon,
@@ -249,7 +256,7 @@ class _AppTextFieldState extends State<AppTextField> {
                       ),
                     ),
               prefixIconConstraints: isCompact
-                  ? const BoxConstraints(minWidth: 42, minHeight: 20)
+                  ? const BoxConstraints(minWidth: 40, minHeight: 20)
                   : const BoxConstraints(minWidth: 48, minHeight: 48),
               suffixIcon: _buildSuffix(iconColor, isCompact: isCompact),
               suffixIconConstraints: isCompact
@@ -332,7 +339,8 @@ class _AppTextFieldState extends State<AppTextField> {
         tooltip: widget.suffixIconTooltip,
         onPressed: widget.enabled ? widget.onSuffixIconPressed : null,
         padding: const EdgeInsets.only(left: AppSpacing.s8, right: 14),
-        constraints: const BoxConstraints(minWidth: 42, minHeight: 20),
+        // 보이는 아이콘은 20 이지만 누르는 영역은 세로 48
+        constraints: const BoxConstraints(minWidth: 42, minHeight: 48),
         style: IconButton.styleFrom(
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
