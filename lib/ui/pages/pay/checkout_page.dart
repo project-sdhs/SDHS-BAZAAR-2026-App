@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -6,81 +8,291 @@ import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../data/models/payment_models.dart';
+import '../../../core/utils/seoul_time.dart';
+import '../../../data/models/payment.dart';
+import '../../../data/models/payment_exception.dart';
+import '../../../data/models/qr_pay.dart';
 import '../../../state/credit_store.dart';
+import '../../../state/idempotency.dart';
 import '../../components/buttons/buttons.dart';
 import '../../components/credit_amount/credit_amounts.dart';
+import '../../components/feedback/feedback.dart';
+import 'booth_paused_page.dart';
+import 'widgets/pay_parts.dart';
 
-// 차감 결과를 받은 뒤에만 receipt 화면으로 이동합니다.
-enum _PaymentStage { selection, processing, receipt, insufficient }
+/// 결제 화면 단계. 서버가 커밋한 결과(200)를 받은 뒤에만 [receipt] 로 갑니다.
+enum _Stage {
+  /// 메뉴 고르기 (QRPay)
+  selection,
 
+  /// 결제 중 (QRPaying)
+  processing,
+
+  /// 응답을 받지 못해 결과를 모름. 같은 키로 "결과 다시 확인" 만 할 수 있습니다.
+  unknown,
+
+  /// 결제 완료 (QRDone)
+  receipt,
+
+  /// 크레딧 부족 (QRFail)
+  insufficient,
+}
+
+/// 고른 메뉴 한 줄
+class _Line {
+  const _Line(this.menu, this.quantity);
+
+  final PayMenu menu;
+  final int quantity;
+  int get amount => menu.price * quantity;
+}
+
+/// QR 결제 (APP-60~63): 메뉴 고르기 → 결제 → 영수증 · 잔액 부족 · 결과 확인.
 class CheckoutPage extends StatefulWidget {
-  const CheckoutPage({super.key, required this.booth});
-  final PaymentBooth booth;
+  const CheckoutPage({super.key, required this.info});
+
+  /// `GET /pay/qr/{code}` 결과
+  final QrPayInfo info;
+
+  /// 한 메뉴를 고를 수 있는 최대 수량 (명세 `PaymentItemInput.quantity` ≤ 20)
+  static const maxQuantity = 20;
 
   @override
   State<CheckoutPage> createState() => _CheckoutPageState();
 }
 
 class _CheckoutPageState extends State<CheckoutPage> {
+  late QrPayInfo _info = widget.info;
   final Map<int, int> _quantities = {};
-  _PaymentStage _stage = _PaymentStage.selection;
+  _Stage _stage = _Stage.selection;
   PaymentReceipt? _receipt;
+  InsufficientCredit? _shortage;
+
+  /// 결제가 거절된 이유 (빨간 안내)
   String? _error;
 
-  List<OrderLine> get _items => [
-    for (final menu in widget.booth.menus)
-      if ((_quantities[menu.id] ?? 0) > 0)
-        OrderLine(menu: menu, quantity: _quantities[menu.id]!),
+  /// 메뉴가 바뀌어 장바구니를 고친 안내 (파란 안내)
+  String? _menuNotice;
+  bool _reloadingMenus = false;
+
+  /// 이 장바구니의 `Idempotency-Key`. 결과를 모를 때는 같은 키로 다시 보내고,
+  /// 장바구니가 바뀌거나 서버가 결과(성공 · 거절)를 준 뒤에만 새로 만듭니다.
+  String? _payKey;
+  String? _payKeyCart;
+  PaymentRequest? _request;
+
+  late final CreditStore _store;
+
+  @override
+  void initState() {
+    super.initState();
+    _store = context.read<CreditStore>();
+  }
+
+  List<_Line> get _lines => [
+    for (final menu in _info.menus)
+      if (menu.onSale && (_quantities[menu.id] ?? 0) > 0)
+        _Line(menu, _quantities[menu.id]!),
   ];
-  int get _total => _items.fold(0, (sum, line) => sum + line.amount);
+
+  int get _total => _lines.fold(0, (sum, line) => sum + line.amount);
+
+  /// 장바구니가 같은지 비교하는 값 (메뉴 · 수량 · 가격)
+  String get _cartSignature => [
+    for (final line in _lines)
+      '${line.menu.id}x${line.quantity}@${line.menu.price}',
+  ].join(',');
+
+  /// 결제 전에 확인할 잔액: QR 정보를 읽을 때 받은 값 또는 앱이 아는 최신 잔액.
+  int? get _freshBalance => _store.hasBalance ? _store.balance : _info.balance;
+
+  void _setQuantity(PayMenu menu, int quantity) => setState(() {
+    if (quantity <= 0) {
+      _quantities.remove(menu.id);
+    } else {
+      _quantities[menu.id] = quantity;
+    }
+    _error = null;
+  });
 
   Future<void> _pay() async {
-    if (_stage == _PaymentStage.processing || _items.isEmpty) return;
-    final store = context.read<CreditStore>();
-    if (_total > store.balance) {
-      setState(() => _stage = _PaymentStage.insufficient);
+    if (_stage == _Stage.processing || _lines.isEmpty || _reloadingMenus) {
       return;
     }
-    final items = _items;
+    final total = _total;
+    final balance = _freshBalance;
+    if (balance != null && total > balance) {
+      setState(() {
+        _shortage = InsufficientCredit(
+          balance: balance,
+          total: total,
+          shortfall: total - balance,
+        );
+        _stage = _Stage.insufficient;
+      });
+      return;
+    }
+
+    final cart = _cartSignature;
+    if (_payKey == null || _payKeyCart != cart) {
+      _payKey = newIdempotencyKey();
+      _payKeyCart = cart;
+    }
+    _request = PaymentRequest(
+      qrCode: _info.code,
+      source: _info.source,
+      items: [
+        for (final line in _lines)
+          PaymentItem(menuId: line.menu.id, quantity: line.quantity),
+      ],
+      clientTotal: total,
+    );
+    await _send();
+  }
+
+  /// [_request] 를 [_payKey] 로 보냅니다. "결과 다시 확인" 도 같은 키 · 같은 본문으로 이 함수를 씁니다.
+  Future<void> _send() async {
+    final request = _request;
+    final key = _payKey;
+    if (request == null || key == null || _stage == _Stage.processing) return;
     setState(() {
-      _stage = _PaymentStage.processing;
+      _stage = _Stage.processing;
       _error = null;
     });
     try {
-      final receipt = await store.pay(widget.booth, items);
+      final receipt = await _store.pay(request, idempotencyKey: key);
       if (!mounted) return;
+      _forgetKey();
       setState(() {
         _receipt = receipt;
-        _stage = _PaymentStage.receipt;
+        _stage = _Stage.receipt;
       });
     } on PaymentException catch (error) {
       if (!mounted) return;
-      setState(() {
-        _stage = error.code == 'INSUFFICIENT_CREDIT'
-            ? _PaymentStage.insufficient
-            : _PaymentStage.selection;
-        _error = error.message;
-      });
+      if (error.code == PaymentErrorCode.idempotencyInProgress) {
+        // 서버가 아직 처리 중: 결과를 모르므로 같은 키를 남겨 둡니다.
+        setState(() => _stage = _Stage.unknown);
+        return;
+      }
+      // 서버가 결과를 줬습니다. 같은 키로 다시 보내면 같은 응답이 오므로 키를 버립니다.
+      _forgetKey();
+      _handleRejected(error);
     } catch (_) {
+      // 응답을 못 받음(시간 초과 · 연결 끊김) 또는 읽을 수 없는 응답: 결제됐을 수도 있습니다.
+      if (mounted) setState(() => _stage = _Stage.unknown);
+    }
+  }
+
+  void _forgetKey() {
+    _payKey = null;
+    _payKeyCart = null;
+    _request = null;
+  }
+
+  void _handleRejected(PaymentException error) {
+    if (BoothPauseNotice.handles(error)) {
+      context.pushReplacement(
+        Routes.payPaused,
+        extra: BoothPauseNotice.fromError(
+          error,
+          booth: _info.booth,
+          fromPayment: true,
+        ),
+      );
+      return;
+    }
+    switch (error.code) {
+      case PaymentErrorCode.insufficientCredit:
+        final total = _total;
+        setState(() {
+          _shortage =
+              error.insufficientCredit ??
+              InsufficientCredit(
+                balance: _store.balance,
+                total: total,
+                shortfall: total - _store.balance,
+              );
+          _stage = _Stage.insufficient;
+        });
+      case PaymentErrorCode.menuChanged:
+        unawaited(_reloadMenus());
+      case PaymentErrorCode.rateLimited:
+        final seconds = error.retryAfter?.inSeconds;
+        setState(() {
+          _stage = _Stage.selection;
+          _error = seconds == null
+              ? '결제 요청이 많아요. 잠시 뒤 다시 결제해 주세요'
+              : '결제 요청이 많아요. $seconds초 뒤 다시 결제해 주세요';
+        });
+      default:
+        setState(() {
+          _stage = _Stage.selection;
+          _error = error.message;
+        });
+    }
+  }
+
+  /// 409 `MENU_CHANGED`: QR 정보를 다시 읽어 품절 · 삭제된 메뉴를 빼고, 남은 메뉴는 새 가격으로 둡니다.
+  Future<void> _reloadMenus() async {
+    final before = {for (final menu in _info.menus) menu.id: menu.name};
+    setState(() {
+      _stage = _Stage.selection;
+      _reloadingMenus = true;
+      _menuNotice = null;
+    });
+    try {
+      final fresh = await _store.qrPayInfo(
+        QrPayload(_info.code, source: _info.source),
+      );
       if (!mounted) return;
+      final available = {
+        for (final menu in fresh.menus)
+          if (menu.onSale) menu.id,
+      };
+      final removed = [
+        for (final id in _quantities.keys)
+          if (!available.contains(id)) before[id] ?? '메뉴',
+      ];
       setState(() {
-        _stage = _PaymentStage.selection;
-        _error = '결제 결과를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.';
+        _info = fresh;
+        _quantities.removeWhere((id, _) => !available.contains(id));
+        _menuNotice = removed.isEmpty
+            ? '메뉴 가격이 바뀌었어요. 바뀐 금액을 확인하고 다시 결제해 주세요'
+            : '주문할 수 없게 된 메뉴를 뺐어요: ${removed.join(', ')}. 금액을 확인하고 다시 결제해 주세요';
       });
+    } on PaymentException catch (error) {
+      if (!mounted) return;
+      if (BoothPauseNotice.handles(error)) {
+        _handleRejected(error);
+      } else {
+        setState(() => _error = error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = '바뀐 메뉴를 불러오지 못했어요. 다시 스캔해 주세요');
+      }
+    } finally {
+      if (mounted) setState(() => _reloadingMenus = false);
+    }
+  }
+
+  void _close() {
+    if (_stage == _Stage.receipt) {
+      context.go(Routes.home);
+    } else {
+      context.pop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final store = context.watch<CreditStore>();
-    final processing = _stage == _PaymentStage.processing;
+    final processing = _stage == _Stage.processing;
+    final dark = _stage == _Stage.selection;
     return PopScope(
       canPop: !processing,
       child: Scaffold(
-        backgroundColor: _stage == _PaymentStage.selection
-            ? AppColors.scannerBackground
-            : AppColors.canvas,
+        backgroundColor: dark ? AppColors.scannerBackground : AppColors.canvas,
         body: SafeArea(
           bottom: false,
           child: Column(
@@ -89,80 +301,79 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 alignment: Alignment.centerLeft,
                 child: IconButton(
                   tooltip: '결제 화면 닫기',
-                  color: _stage == _PaymentStage.selection
-                      ? AppColors.onPrimary
-                      : AppColors.foreground,
+                  color: dark ? AppColors.onPrimary : AppColors.foreground,
                   icon: const Icon(Icons.close),
-                  onPressed: processing ? null : () => context.pop(),
+                  onPressed: processing ? null : _close,
                 ),
               ),
-              if (_stage == _PaymentStage.selection) ...[
+              if (dark)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.s16),
-                  child: Text(
-                    '✓ QR을 인식했어요',
-                    style: AppTypography.body.copyWith(
-                      color: AppColors.onPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        size: 20,
+                        color: AppColors.onPrimary,
+                      ),
+                      const SizedBox(width: AppSpacing.s6),
+                      Text(
+                        'QR을 인식했어요',
+                        style: AppTypography.body.copyWith(
+                          color: AppColors.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
               Expanded(
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: AppColors.canvas,
                     borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(
-                        _stage == _PaymentStage.selection ? 24 : 0,
-                      ),
+                      top: Radius.circular(dark ? 24 : 0),
                     ),
                   ),
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(AppSpacing.s16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (store.isPreview)
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: AppSpacing.s16,
-                            ),
-                            child: Text(
-                              '디자인 미리보기 · 예시 데이터',
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.muted,
-                              ),
-                            ),
-                          ),
-                        switch (_stage) {
-                          _PaymentStage.selection => _selection(store),
-                          _PaymentStage.processing => _processing(),
-                          _PaymentStage.receipt => _completed(_receipt!),
-                          _PaymentStage.insufficient => _insufficient(store),
-                        },
-                      ],
-                    ),
+                    child: switch (_stage) {
+                      _Stage.selection => _selection(store),
+                      _Stage.processing => _processing(),
+                      _Stage.unknown => _unknown(),
+                      _Stage.receipt => _completed(_receipt!),
+                      _Stage.insufficient => _insufficient(_shortage!),
+                    },
                   ),
                 ),
               ),
             ],
           ),
         ),
-        bottomNavigationBar: _bottomActions(store),
+        bottomNavigationBar: _bottomActions(),
       ),
     );
   }
 
-  Widget _selection(CreditStore store) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _BoothHeader(booth: widget.booth),
-      const SizedBox(height: AppSpacing.s24),
-      if (!widget.booth.isOpen)
-        _notice('지금은 주문을 받지 않는 부스예요. 운영 중일 때 다시 방문해 주세요.', danger: true)
-      else ...[
+  Widget _boothHeader() => PayBoothHeader.of(
+    _info.booth,
+    imageUrl: _store.repository.imageUrl(_info.booth.imageUrl),
+  );
+
+  Widget _selection(CreditStore store) {
+    final lines = _lines;
+    final balance = _freshBalance;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _boothHeader(),
+        const SizedBox(height: AppSpacing.s24),
+        if (_menuNotice case final notice?) ...[
+          AppNotice(notice, icon: Icons.info_rounded),
+          const SizedBox(height: AppSpacing.s16),
+        ],
         Row(
           children: [
             Expanded(
@@ -175,7 +386,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ),
             ),
             Text(
-              '${_items.length}개 선택',
+              '${lines.length}개 선택',
               style: AppTypography.bodySmall.copyWith(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w600,
@@ -184,51 +395,77 @@ class _CheckoutPageState extends State<CheckoutPage> {
           ],
         ),
         const SizedBox(height: AppSpacing.s8),
-        for (final menu in widget.booth.menus) _menuRow(menu),
+        if (_reloadingMenus)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.s24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else
+          for (final menu in _info.menus) _menuRow(menu),
         const SizedBox(height: AppSpacing.s16),
-        _card(
-          Column(
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.s16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.r16),
+          ),
+          child: Column(
             children: [
-              _AmountRow(label: '결제 금액', amount: _total, bold: true),
-              const SizedBox(height: AppSpacing.s8),
-              _AmountRow(
-                label: '결제 후 잔액',
-                amount: store.balance - _total,
-                tone: _total > store.balance
-                    ? CreditAmountTone.danger
-                    : CreditAmountTone.secondary,
-              ),
+              PayAmountRow(label: '결제 금액', amount: _total, bold: true),
+              if (balance != null) ...[
+                const SizedBox(height: AppSpacing.s8),
+                PayAmountRow(
+                  label: '결제 후 잔액',
+                  amount: balance - _total,
+                  tone: _total > balance
+                      ? CreditAmountTone.danger
+                      : CreditAmountTone.secondary,
+                ),
+              ],
             ],
           ),
         ),
+        if (_error case final error?) ...[
+          const SizedBox(height: AppSpacing.s16),
+          AppNotice(error, tone: AppNoticeTone.danger),
+        ],
       ],
-      if (_error case final error?) ...[
-        const SizedBox(height: AppSpacing.s16),
-        _notice(error, danger: true),
-      ],
-    ],
-  );
+    );
+  }
 
-  Widget _menuRow(MenuItem menu) {
+  Widget _menuRow(PayMenu menu) {
     final quantity = _quantities[menu.id] ?? 0;
+    final imageUrl = _store.repository.imageUrl(menu.imageUrl);
+    const placeholder = ColoredBox(
+      color: AppColors.surface,
+      child: Center(
+        child: Icon(Icons.restaurant_rounded, color: AppColors.muted, size: 24),
+      ),
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.s8),
       child: Row(
         children: [
           Opacity(
             opacity: menu.onSale ? 1 : 0.4,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.r14),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.r14),
+              child: SizedBox.square(
+                dimension: 48,
+                child: imageUrl == null
+                    ? placeholder
+                    : Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        excludeFromSemantics: true,
+                        errorBuilder: (context, error, stackTrace) =>
+                            placeholder,
+                      ),
               ),
-              alignment: Alignment.center,
-              child: Text(menu.emoji, style: const TextStyle(fontSize: 30)),
             ),
           ),
-          const SizedBox(width: AppSpacing.s8),
+          const SizedBox(width: AppSpacing.s16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,7 +520,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Widget _quantityButton(
-    MenuItem menu,
+    PayMenu menu,
     int quantity,
     IconData icon,
     String label,
@@ -300,11 +537,42 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
     ),
     iconSize: 18,
-    onPressed: quantity > 99
+    onPressed: quantity > CheckoutPage.maxQuantity || _reloadingMenus
         ? null
-        : () => setState(() => _quantities[menu.id] = quantity),
+        : () => _setQuantity(menu, quantity),
     icon: Icon(icon),
   );
+
+  Widget _orderSummaryCard() {
+    final lines = _lines;
+    return PayCard(
+      child: Column(
+        children: [
+          _boothHeader(),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.s16),
+            child: Divider(height: 1, color: AppColors.border),
+          ),
+          for (final line in lines)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s4),
+              child: PayAmountRow(
+                label: '${line.menu.name} × ${line.quantity}',
+                amount: line.amount,
+                tone: CreditAmountTone.normal,
+              ),
+            ),
+          const SizedBox(height: AppSpacing.s16),
+          PayAmountRow(
+            label: '결제할 금액',
+            amount: _total,
+            bold: true,
+            tone: CreditAmountTone.normal,
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _processing() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,7 +586,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       const SizedBox(height: AppSpacing.s32),
       _step(
         '주문 확인',
-        '${widget.booth.name} · 메뉴 ${_items.length}개',
+        '${_info.booth.name} · 메뉴 ${_lines.length}개',
         complete: true,
       ),
       _step(
@@ -328,20 +596,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
       _step('결제 번호 받기', '차감이 끝나면 바로 보여 드려요'),
       const SizedBox(height: AppSpacing.s24),
-      _card(
-        Column(
-          children: [
-            _BoothHeader(booth: widget.booth),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.s16),
-              child: Divider(),
-            ),
-            ..._orderRows(_items),
-            const SizedBox(height: AppSpacing.s16),
-            _AmountRow(label: '결제할 금액', amount: _total, bold: true),
-          ],
-        ),
-      ),
+      _orderSummaryCard(),
     ],
   );
 
@@ -392,15 +647,33 @@ class _CheckoutPageState extends State<CheckoutPage> {
     ),
   );
 
+  Widget _unknown() => Column(
+    children: [
+      const PayResultHeading(
+        title: '결제 결과를 확인하고 있어요',
+        description: '연결이 불안정해 결과를 받지 못했어요.\n같은 결제는 두 번 빠져나가지 않아요.',
+        icon: Icons.hourglass_top_rounded,
+        tone: PayResultTone.neutral,
+      ),
+      _orderSummaryCard(),
+      const SizedBox(height: AppSpacing.s16),
+      const AppNotice(
+        '"결과 다시 확인"을 누르면 같은 결제의 결과를 다시 받아요',
+        icon: Icons.info_rounded,
+        tone: AppNoticeTone.neutral,
+      ),
+    ],
+  );
+
   Widget _completed(PaymentReceipt receipt) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      _resultHeading(
-        '결제가 끝났어요',
-        '${AppCreditAmount.format(receipt.total)} 크레딧이 빠져나갔어요',
+      PayResultHeading(
+        title: '결제가 끝났어요',
+        description: '크레딧 ${AppCreditAmount.format(receipt.total)}가 빠져나갔어요',
       ),
-      _card(
-        Column(
+      PayCard(
+        child: Column(
           children: [
             Row(
               children: [
@@ -410,7 +683,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     children: [
                       Text(
                         '결제 번호',
-                        style: AppTypography.bodySmall.copyWith(
+                        style: AppTypography.body.copyWith(
+                          fontSize: 15,
                           color: AppColors.muted,
                           fontWeight: FontWeight.w600,
                         ),
@@ -425,84 +699,109 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ),
                 ),
                 Text(
-                  '${receipt.number}',
+                  '${receipt.no}',
                   key: const Key('paymentNumber'),
                   style: AppTypography.h1.copyWith(
                     color: AppColors.primary,
-                    fontSize: 52,
+                    fontSize: 56,
+                    height: 64 / 56,
                   ),
                 ),
               ],
             ),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.s16),
-              child: Divider(),
+              child: Divider(height: 1, color: AppColors.border),
             ),
-            _BoothHeader(booth: receipt.booth),
+            _boothHeader(),
           ],
         ),
       ),
-      const SizedBox(height: AppSpacing.s24),
-      Text(
-        '주문한 메뉴',
-        style: AppTypography.bodySmall.copyWith(
-          color: AppColors.muted,
-          fontWeight: FontWeight.w600,
+      const SizedBox(height: 20),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '주문한 메뉴',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.muted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s6),
+            for (final line in receipt.items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.s6),
+                child: PayAmountRow(
+                  label: '${line.name} × ${line.quantity}',
+                  amount: line.amount,
+                  tone: CreditAmountTone.normal,
+                ),
+              ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.s16),
+              child: Divider(height: 1, color: AppColors.border),
+            ),
+            PayAmountRow(label: '결제 전 크레딧', amount: receipt.balanceBefore),
+            const SizedBox(height: AppSpacing.s6),
+            PayAmountRow(
+              label: '결제',
+              amount: -receipt.total,
+              bold: true,
+              tone: CreditAmountTone.normal,
+            ),
+            const SizedBox(height: AppSpacing.s6),
+            PayAmountRow(
+              label: '남은 크레딧',
+              amount: receipt.balanceAfter,
+              bold: true,
+              tone: CreditAmountTone.charge,
+            ),
+            const SizedBox(height: AppSpacing.s6),
+            Text(
+              '${_paidAtLabel(receipt.paidAt)} · 거래 내역에도 남아요',
+              style: AppTypography.caption.copyWith(
+                fontSize: 13,
+                color: AppColors.muted,
+              ),
+            ),
+          ],
         ),
-      ),
-      const SizedBox(height: AppSpacing.s8),
-      ..._orderRows(receipt.items),
-      const Padding(
-        padding: EdgeInsets.symmetric(vertical: AppSpacing.s16),
-        child: Divider(),
-      ),
-      _AmountRow(label: '결제 전 크레딧', amount: receipt.balanceBefore),
-      const SizedBox(height: AppSpacing.s8),
-      _AmountRow(label: '결제', amount: -receipt.total, bold: true),
-      const SizedBox(height: AppSpacing.s8),
-      _AmountRow(
-        label: '남은 크레딧',
-        amount: receipt.balanceAfter,
-        bold: true,
-        tone: CreditAmountTone.charge,
-      ),
-      const SizedBox(height: AppSpacing.s8),
-      Text(
-        '${_paidAtLabel(receipt.paidAt)} · 거래 내역에도 남아 있어요',
-        style: AppTypography.bodySmall.copyWith(color: AppColors.muted),
       ),
     ],
   );
 
   String _paidAtLabel(DateTime paidAt) {
-    final seoul = paidAt.toUtc().add(const Duration(hours: 9));
-    final hour = seoul.hour.toString().padLeft(2, '0');
-    final minute = seoul.minute.toString().padLeft(2, '0');
-    return '${seoul.month}월 ${seoul.day}일 $hour:$minute';
+    final seoul = toSeoul(paidAt);
+    return '${seoul.month}월 ${seoul.day}일 ${seoulHourMinute(paidAt)}';
   }
 
-  Widget _insufficient(CreditStore store) => Column(
+  Widget _insufficient(InsufficientCredit shortage) => Column(
     children: [
-      _resultHeading(
-        '크레딧이 부족해요',
-        '${AppCreditAmount.format((_total - store.balance).clamp(0, _total))} 크레딧을 더 충전하면 결제할 수 있어요',
-        danger: true,
+      PayResultHeading(
+        title: '크레딧이 부족해요',
+        description:
+            '${AppCreditAmount.format(shortage.shortfall)} 크레딧을 더 충전하면 결제할 수 있어요',
+        icon: Icons.error,
+        tone: PayResultTone.danger,
       ),
-      _card(
-        Column(
+      PayCard(
+        child: Column(
           children: [
-            _BoothHeader(booth: widget.booth),
+            _boothHeader(),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.s16),
-              child: Divider(),
+              child: Divider(height: 1, color: AppColors.border),
             ),
-            _AmountRow(label: '결제할 금액', amount: _total),
-            const SizedBox(height: AppSpacing.s8),
-            _AmountRow(label: '보유 크레딧', amount: store.balance),
-            const SizedBox(height: AppSpacing.s8),
-            _AmountRow(
+            PayAmountRow(label: '결제할 금액', amount: shortage.total),
+            const SizedBox(height: AppSpacing.s6),
+            PayAmountRow(label: '보유 크레딧', amount: shortage.balance),
+            const SizedBox(height: AppSpacing.s6),
+            PayAmountRow(
               label: '부족한 크레딧',
-              amount: (_total - store.balance).clamp(0, _total),
+              amount: shortage.shortfall,
               bold: true,
               tone: CreditAmountTone.danger,
             ),
@@ -510,60 +809,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
         ),
       ),
       const SizedBox(height: AppSpacing.s16),
-      _notice('크레딧은 빠져나가지 않았어요'),
+      const AppNotice('크레딧은 빠져나가지 않았어요', icon: Icons.check_circle),
     ],
   );
 
-  Widget _resultHeading(
-    String title,
-    String description, {
-    bool danger = false,
-  }) => Padding(
-    padding: const EdgeInsets.only(bottom: AppSpacing.s24),
-    child: Center(
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: danger ? AppColors.dangerWeak : AppColors.primary,
-            ),
-            child: Icon(
-              danger ? Icons.error : Icons.check,
-              color: danger ? AppColors.danger : AppColors.onPrimary,
-              size: 32,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s16),
-          Text(title, style: AppTypography.h3, textAlign: TextAlign.center),
-          const SizedBox(height: AppSpacing.s8),
-          Text(
-            description,
-            style: AppTypography.body.copyWith(color: AppColors.body),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    ),
-  );
-
-  List<Widget> _orderRows(List<OrderLine> items) => [
-    for (final line in items)
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s4),
-        child: _AmountRow(
-          label: '${line.menu.name} × ${line.quantity}',
-          amount: line.amount,
-        ),
-      ),
-  ];
-
-  Widget _bottomActions(CreditStore store) {
+  Widget _bottomActions() {
     final total = AppCreditAmount.format(_total);
     return switch (_stage) {
-      _PaymentStage.selection => BottomCTA(
+      _Stage.selection => BottomCTA(
         buttons: [
           AppButton(
             '다시 스캔',
@@ -573,25 +826,39 @@ class _CheckoutPageState extends State<CheckoutPage> {
           AppButton(
             '$total 결제하기',
             key: const Key('submitPayment'),
-            enabled: _items.isNotEmpty && widget.booth.isOpen,
+            enabled: _lines.isNotEmpty && !_reloadingMenus,
             onPressed: _pay,
           ),
         ],
       ),
-      _PaymentStage.processing => BottomCTA(
+      _Stage.processing => BottomCTA(
         buttons: [const AppButton('결제 중이에요', onPressed: null)],
       ),
-      _PaymentStage.receipt => BottomCTA(
+      _Stage.unknown => BottomCTA(
+        buttons: [
+          AppButton(
+            '거래 내역',
+            variant: AppButtonVariant.light,
+            onPressed: () => context.push(Routes.transactions),
+          ),
+          AppButton(
+            '결과 다시 확인',
+            key: const Key('recheckPayment'),
+            onPressed: _send,
+          ),
+        ],
+      ),
+      _Stage.receipt => BottomCTA(
         buttons: [
           AppButton(
             '거래 내역',
             variant: AppButtonVariant.light,
             onPressed: () => context.pushReplacement(Routes.transactions),
           ),
-          AppButton('확인', onPressed: () => context.pop()),
+          AppButton('확인', onPressed: () => context.go(Routes.home)),
         ],
       ),
-      _PaymentStage.insufficient => BottomCTA(
+      _Stage.insufficient => BottomCTA(
         buttons: [
           AppButton(
             '다시 스캔',
@@ -602,114 +869,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
             '충전하러 가기',
             onPressed: () async {
               await context.push(Routes.credit);
-              if (mounted) setState(() => _stage = _PaymentStage.selection);
+              if (mounted) setState(() => _stage = _Stage.selection);
             },
           ),
         ],
       ),
     };
   }
-
-  Widget _card(Widget child) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(AppSpacing.s16),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.r16),
-    ),
-    child: child,
-  );
-
-  Widget _notice(String message, {bool danger = false}) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(AppSpacing.s16),
-    decoration: BoxDecoration(
-      color: danger ? AppColors.dangerWeak : AppColors.weakBackground,
-      borderRadius: BorderRadius.circular(AppRadius.r14),
-    ),
-    child: Text(
-      message,
-      style: AppTypography.bodySmall.copyWith(
-        color: danger ? AppColors.danger : AppColors.weakForeground,
-      ),
-    ),
-  );
-}
-
-class _BoothHeader extends StatelessWidget {
-  const _BoothHeader({required this.booth});
-  final PaymentBooth booth;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: AppColors.weakBackground,
-          borderRadius: BorderRadius.circular(AppRadius.r14),
-        ),
-        child: const Icon(
-          Icons.storefront_rounded,
-          color: AppColors.primary,
-          size: 28,
-        ),
-      ),
-      const SizedBox(width: AppSpacing.s16),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(booth.name, style: AppTypography.h4),
-            Text(
-              booth.location,
-              style: AppTypography.bodySmall.copyWith(color: AppColors.muted),
-            ),
-          ],
-        ),
-      ),
-    ],
-  );
-}
-
-class _AmountRow extends StatelessWidget {
-  const _AmountRow({
-    required this.label,
-    required this.amount,
-    this.bold = false,
-    this.tone = CreditAmountTone.secondary,
-  });
-  final String label;
-  final int amount;
-  final bool bold;
-  final CreditAmountTone tone;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Expanded(
-        child: Text(
-          label,
-          style: AppTypography.bodySmall.copyWith(
-            fontWeight: bold ? FontWeight.w600 : FontWeight.w400,
-            color: tone.color,
-          ),
-        ),
-      ),
-      const SizedBox(width: AppSpacing.s8),
-      Flexible(
-        child: Align(
-          alignment: Alignment.centerRight,
-          child: AppCreditAmount(
-            amount: amount,
-            type: CreditAmountType.body,
-            tone: tone,
-            fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-          ),
-        ),
-      ),
-    ],
-  );
 }

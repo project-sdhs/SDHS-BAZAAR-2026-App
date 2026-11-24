@@ -1,297 +1,127 @@
-import '../models/payment_models.dart';
+import '../api/api_client.dart';
+import '../models/charge_request.dart';
+import '../models/credit_summary.dart';
+import '../models/credit_transaction.dart';
+import '../models/payment.dart';
+import '../models/payment_exception.dart';
+import '../models/public_settings.dart';
+import '../models/qr_pay.dart';
 
-/// 화면이 사용하는 결제 데이터 계약. 서버 연동 시 이 구현을 교체합니다.
-abstract class PaymentRepository {
-  int get balance;
-  int get chargedTotal;
-  int get usedTotal;
-  String get depositorName;
-  ChargeSettings get settings;
-  List<CreditTransaction> get transactions;
-  ChargeRequest? get chargeRequest;
-  bool get isPreview;
+/// 크레딧 · 충전 · QR 결제 · 거래 내역 서버 호출.
+///
+/// - 서버의 에러 응답은 [PaymentException] 으로 바꿔 던집니다 (409 추가 필드 · `Retry-After` 포함).
+/// - 응답을 받지 못하면 [ApiNetworkException] (시간 초과는 [ApiTimeoutException]) 을 그대로 던집니다.
+/// - 응답 모양이 다르면 [FormatException] 을 던집니다.
+class PaymentRepository {
+  PaymentRepository(this._api);
 
-  Future<ChargeRequest> requestCharge(int amount);
-  Future<ChargeRequest?> refreshCharge();
-  Future<PaymentBooth> resolveQr(String value);
-  Future<PaymentReceipt> pay(PaymentBooth booth, List<OrderLine> items);
-}
+  final ApiClient _api;
 
-/// 피그마 화면과 동작을 확인하는 로컬 예시 데이터입니다.
-class PreviewPaymentRepository implements PaymentRepository {
-  PreviewPaymentRepository({
-    int balance = 12400,
-    ChargeSettings? settings,
-    ChargeRequest? chargeRequest,
-  }) : _creditBalance = balance,
-       settings = settings ?? _previewSettings,
-       _pendingChargeRequest = chargeRequest;
+  /// 공개 설정 (`GET /settings/public`): 바자회 기간 · 입금 계좌 · 입금자명 규칙 · 충전 한도.
+  Future<PublicSettings> publicSettings() async =>
+      PublicSettings.fromJson(_map(await _get('/settings/public'), '공개 설정'));
 
-  static const _previewSettings = ChargeSettings(
-    account: DepositAccount(
-      bank: '은행 확인 중',
-      accountNo: '계좌 확인 중',
-      holder: '예금주 확인 중',
+  /// 내 크레딧 (`GET /me/credit`).
+  Future<CreditSummary> myCredit() async =>
+      CreditSummary.fromJson(_map(await _get('/me/credit'), '내 크레딧'));
+
+  /// 충전 요청 (`POST /credits/charge`).
+  ///
+  /// 재시도할 때는 같은 [idempotencyKey] 를 넘깁니다. 이미 대기 중인 요청이 있으면
+  /// 서버가 그 요청을 200 으로 돌려주고, 이때 [ChargeResult.created] 는 false 입니다.
+  Future<ChargeResult> requestCharge(
+    int amount, {
+    required String idempotencyKey,
+  }) async {
+    final response = await _guard(
+      () => _api.postResponse(
+        '/credits/charge',
+        body: {'amount': amount},
+        headers: {'Idempotency-Key': idempotencyKey},
+      ),
+    );
+    return ChargeResult(
+      request: ChargeRequest.fromJson(_map(response.body, '충전 요청')),
+      created: response.statusCode == 201,
+    );
+  }
+
+  /// 충전 요청 상태 (`GET /credits/charge/{id}`).
+  Future<ChargeRequest> chargeRequest(int id) async =>
+      ChargeRequest.fromJson(_map(await _get('/credits/charge/$id'), '충전 요청'));
+
+  /// 거래 내역 한 페이지 (`GET /transactions`). 서버가 준 순서 그대로입니다.
+  ///
+  /// 다음 페이지는 앞 페이지의 [TransactionPage.nextCursor] 를 [cursor] 로 넘깁니다.
+  Future<TransactionPage> transactions({
+    TransactionFilter? type,
+    String? cursor,
+    int limit = 20,
+  }) async => TransactionPage.fromJson(
+    _map(
+      await _get(
+        '/transactions',
+        query: {'type': ?type?.name, 'cursor': ?cursor, 'limit': '$limit'},
+      ),
+      '거래 내역',
     ),
   );
 
-  static const _qrCode = 'K7Q2M9X4TB';
-  static final _booth = PaymentBooth(
-    code: _qrCode,
-    name: '2-3 타코야끼',
-    location: '2학년 3반 · 신관 2층 복도',
-    menus: const [
-      MenuItem(id: 301, name: '타코야끼 8알', price: 3000),
-      MenuItem(id: 302, name: '타코야끼 4알', price: 1800),
-      MenuItem(id: 303, name: '치즈 타코야끼 6알', price: 3500),
-      MenuItem(id: 304, name: '라무네', price: 2000, onSale: false, emoji: '🧃'),
-    ],
+  /// QR 로 결제 화면 정보 읽기 (`GET /pay/qr/{code}?src=`).
+  ///
+  /// 주문 정지면 `ORDERING_PAUSED`, 운영 시간 밖이면 `BOOTH_CLOSED`, 모르는 QR 이면 `QR_INVALID`.
+  Future<QrPayInfo> qrPayInfo(
+    String code, {
+    PaymentSource source = PaymentSource.print,
+  }) async => QrPayInfo.fromJson(
+    _map(
+      await _get(
+        '/pay/qr/${Uri.encodeComponent(code)}',
+        query: {'src': source.name},
+      ),
+      'QR 결제 정보',
+    ),
   );
 
-  int _creditBalance;
-  int _usedTotal = 17600;
-  int _nextPaymentNumber = 31;
-  int _nextChargeId = 512;
-  ChargeRequest? _pendingChargeRequest;
-  bool _paying = false;
-  bool _requestingCharge = false;
+  /// 결제 (`POST /payments`). 200 은 서버가 커밋한 뒤에만 옵니다.
+  ///
+  /// 재시도할 때는 같은 [idempotencyKey] 를 넘깁니다 (같은 키면 처음 결과를 그대로 받음).
+  Future<PaymentReceipt> pay(
+    PaymentRequest request, {
+    required String idempotencyKey,
+  }) async {
+    final response = await _guard(
+      () => _api.postResponse(
+        '/payments',
+        body: request.toJson(),
+        headers: {'Idempotency-Key': idempotencyKey},
+      ),
+    );
+    return PaymentReceipt.fromJson(_map(response.body, '결제'));
+  }
 
-  final List<CreditTransaction> _transactions = [
-    CreditTransaction(
-      id: 'purchase-5702',
-      type: TransactionType.purchase,
-      title: '3-1 로제떡볶이',
-      subtitle: '메뉴 2건',
-      occurredAt: DateTime.parse('2026-10-24T12:40:00+09:00'),
-      status: 'completed',
-      amount: -4500,
-    ),
-    CreditTransaction(
-      id: 'charge-511',
-      type: TransactionType.charge,
-      title: '계좌이체 충전',
-      subtitle: '승인',
-      occurredAt: DateTime.parse('2026-10-24T09:12:00+09:00'),
-      status: 'approved',
-      amount: 10000,
-    ),
-    CreditTransaction(
-      id: 'purchase-5621',
-      type: TransactionType.purchase,
-      title: '학생회 굿즈샵',
-      subtitle: '메뉴 1건',
-      occurredAt: DateTime.parse('2026-10-23T16:52:00+09:00'),
-      status: 'completed',
-      amount: -6000,
-    ),
-    CreditTransaction(
-      id: 'purchase-5620',
-      type: TransactionType.purchase,
-      title: '2-5 보드게임',
-      subtitle: '메뉴 2건',
-      occurredAt: DateTime.parse('2026-10-23T16:30:00+09:00'),
-      status: 'completed',
-      amount: -7100,
-    ),
-    CreditTransaction(
-      id: 'charge-509',
-      type: TransactionType.charge,
-      title: '계좌이체 충전',
-      subtitle: '승인',
-      occurredAt: DateTime.parse('2026-10-23T16:05:00+09:00'),
-      status: 'approved',
-      amount: 20000,
-    ),
-  ];
+  /// 서버가 준 상대 경로를 앱이 쓰는 서버 주소와 합친 이미지 주소.
+  String? imageUrl(String? path) =>
+      path == null ? null : '${_api.baseUrl}$path';
 
-  @override
-  int get balance => _creditBalance;
+  /// 앱이 끝날 때 HTTP 연결을 닫습니다.
+  void close() => _api.close();
 
-  @override
-  int get chargedTotal => 30000;
+  Future<Object?> _get(String path, {Map<String, String>? query}) async =>
+      (await _guard(() => _api.getResponse(path, query: query))).body;
 
-  @override
-  int get usedTotal => _usedTotal;
-
-  @override
-  String get depositorName => '2205 이재원';
-
-  @override
-  final ChargeSettings settings;
-
-  @override
-  List<CreditTransaction> get transactions => List.unmodifiable(_transactions);
-
-  @override
-  ChargeRequest? get chargeRequest => _pendingChargeRequest;
-
-  @override
-  bool get isPreview => true;
-
-  @override
-  Future<ChargeRequest> requestCharge(int amount) async {
-    if (_requestingCharge) {
-      throw const PaymentException(
-        code: 'CHARGE_IN_PROGRESS',
-        message: '충전 요청을 보내고 있어요. 잠시만 기다려 주세요.',
-      );
-    }
-    _validateCharge(amount);
-    final current = _pendingChargeRequest;
-    if (current != null &&
-        (current.status == ChargeStatus.pending ||
-            current.status == ChargeStatus.needsReview)) {
-      throw const PaymentException(
-        code: 'CHARGE_PENDING',
-        message: '확인 중인 충전 요청이 있어요.',
-      );
-    }
-
-    _requestingCharge = true;
+  Future<ApiResponse> _guard(Future<ApiResponse> Function() call) async {
     try {
-      await Future<void>.delayed(const Duration(milliseconds: 450));
-      final request = ChargeRequest(
-        id: _nextChargeId++,
-        amount: amount,
-        status: ChargeStatus.pending,
-        depositorName: depositorName,
-      );
-      _pendingChargeRequest = request;
-      return request;
-    } finally {
-      _requestingCharge = false;
+      return await call();
+    } on ApiException catch (error) {
+      throw PaymentException.fromApi(error);
     }
   }
 
-  void _validateCharge(int amount) {
-    if (settings.eventEnded) {
-      throw const PaymentException(
-        code: 'EVENT_ENDED',
-        message: '바자회가 끝나서 충전할 수 없어요.',
-      );
+  Map<String, Object?> _map(Object? body, String what) {
+    if (body is! Map<String, Object?>) {
+      throw FormatException('$what 응답 모양이 달라요');
     }
-    if (amount < settings.minimumAmount ||
-        (settings.maximumAmount != null && amount > settings.maximumAmount!) ||
-        (settings.balanceLimit != null &&
-            balance + amount > settings.balanceLimit!)) {
-      throw const PaymentException(
-        code: 'VALIDATION_FAILED',
-        message: '충전할 수 있는 금액을 확인해 주세요.',
-      );
-    }
-  }
-
-  @override
-  Future<ChargeRequest?> refreshCharge() async => _pendingChargeRequest;
-
-  @override
-  Future<PaymentBooth> resolveQr(String value) async {
-    final trimmed = value.trim();
-    final uri = Uri.tryParse(trimmed);
-    final isQrUrl =
-        uri != null &&
-        (uri.scheme == 'https' || uri.scheme == 'http') &&
-        uri.host.isNotEmpty &&
-        uri.pathSegments.length == 2 &&
-        uri.pathSegments.first == 'q' &&
-        uri.pathSegments.last == _qrCode;
-    if (trimmed != _qrCode && !isQrUrl) {
-      throw const PaymentException(
-        code: 'QR_INVALID',
-        message: '바자회 부스의 QR인지 확인하고 다시 스캔해 주세요.',
-      );
-    }
-    return _booth;
-  }
-
-  @override
-  Future<PaymentReceipt> pay(PaymentBooth booth, List<OrderLine> items) async {
-    if (_paying) {
-      throw const PaymentException(
-        code: 'PAYMENT_IN_PROGRESS',
-        message: '결제를 처리하고 있어요. 잠시만 기다려 주세요.',
-      );
-    }
-    if (booth.code != _qrCode) {
-      throw const PaymentException(
-        code: 'QR_INVALID',
-        message: '부스 QR을 다시 스캔해 주세요.',
-      );
-    }
-    if (!booth.isOpen) {
-      throw const PaymentException(
-        code: 'BOOTH_CLOSED',
-        message: '지금은 주문을 받고 있지 않아요.',
-      );
-    }
-    final frozenItems = List<OrderLine>.unmodifiable(items);
-    final validatedItems = _validateItems(frozenItems);
-    final total = validatedItems.fold(0, (sum, item) => sum + item.amount);
-    if (total > _creditBalance) {
-      throw const PaymentException(
-        code: 'INSUFFICIENT_CREDIT',
-        message: '크레딧이 부족해요.',
-      );
-    }
-
-    _paying = true;
-    try {
-      await Future<void>.delayed(const Duration(milliseconds: 900));
-      final balanceBefore = _creditBalance;
-      final receipt = PaymentReceipt(
-        number: _nextPaymentNumber++,
-        booth: _booth,
-        items: validatedItems,
-        total: total,
-        balanceBefore: balanceBefore,
-        balanceAfter: balanceBefore - total,
-        paidAt: DateTime.now(),
-      );
-      _creditBalance = receipt.balanceAfter;
-      _usedTotal += total;
-      _transactions.insert(
-        0,
-        CreditTransaction(
-          id: 'preview-payment-${receipt.number}',
-          type: TransactionType.purchase,
-          title: receipt.booth.name,
-          subtitle: '메뉴 ${validatedItems.length}건',
-          occurredAt: receipt.paidAt,
-          status: 'completed',
-          amount: -total,
-        ),
-      );
-      return receipt;
-    } finally {
-      _paying = false;
-    }
-  }
-
-  List<OrderLine> _validateItems(List<OrderLine> items) {
-    if (items.isEmpty ||
-        items.map((line) => line.menu.id).toSet().length != items.length) {
-      throw const PaymentException(
-        code: 'VALIDATION_FAILED',
-        message: '결제할 메뉴를 골라 주세요.',
-      );
-    }
-    final menus = {for (final menu in _booth.menus) menu.id: menu};
-    return [for (final line in items) _validateLine(line, menus[line.menu.id])];
-  }
-
-  OrderLine _validateLine(OrderLine line, MenuItem? menu) {
-    if (line.quantity < 1) {
-      throw const PaymentException(
-        code: 'VALIDATION_FAILED',
-        message: '메뉴 수량은 1개 이상 골라 주세요.',
-      );
-    }
-    if (menu == null || !menu.onSale || menu.price != line.menu.price) {
-      throw const PaymentException(
-        code: 'MENU_CHANGED',
-        message: '메뉴 가격이나 판매 상태가 바뀌었어요. 다시 확인해 주세요.',
-      );
-    }
-    return OrderLine(menu: menu, quantity: line.quantity);
+    return body;
   }
 }

@@ -5,11 +5,20 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 
 class AppTopBar extends StatelessWidget {
-  const AppTopBar({super.key, this.title, this.description, this.onShare});
+  const AppTopBar({
+    super.key,
+    this.title,
+    this.description,
+    this.descriptionColor = AppColors.muted,
+    this.onShare,
+  });
 
   final String? title;
 
   final String? description;
+
+  /// 설명 글자 색. 기본은 보조 글자(muted), 막힌 상태를 알릴 때는 `AppColors.danger`.
+  final Color descriptionColor;
 
   // [리뷰 4] 필요한 화면만 콜백을 전달
   final VoidCallback? onShare;
@@ -101,11 +110,11 @@ class AppTopBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 description,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Pretendard',
                   fontSize: 16,
                   height: 24 / 16,
-                  color: AppColors.muted,
+                  color: descriptionColor,
                 ),
               ),
             ),

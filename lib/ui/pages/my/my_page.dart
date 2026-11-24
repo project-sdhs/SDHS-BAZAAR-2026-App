@@ -43,10 +43,32 @@ class MyPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s4),
-                  AppCreditAmount(
-                    amount: store.balance,
-                    type: CreditAmountType.tile,
-                  ),
+                  if (store.hasBalance)
+                    AppCreditAmount(
+                      amount: store.balance,
+                      type: CreditAmountType.tile,
+                    )
+                  else if (store.isLoading)
+                    const AppSkeleton(width: 160, height: 40, radius: 8)
+                  else
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '잔액을 불러오지 못했어요',
+                            style: AppTypography.body.copyWith(
+                              color: AppColors.body,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: '잔액 다시 불러오기',
+                          icon: const Icon(Icons.refresh_rounded, size: 20),
+                          color: AppColors.muted,
+                          onPressed: store.refresh,
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: AppSpacing.s16),
                   Row(
                     children: [
@@ -88,14 +110,6 @@ class MyPage extends StatelessWidget {
               ),
               onTap: () => context.push(Routes.credit),
             ),
-            if (store.isPreview)
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.s16),
-                child: Text(
-                  '디자인 미리보기 · 예시 데이터',
-                  style: AppTypography.caption.copyWith(color: AppColors.muted),
-                ),
-              ),
           ],
         ),
       ),

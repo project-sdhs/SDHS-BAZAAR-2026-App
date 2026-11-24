@@ -15,11 +15,12 @@ import '../../ui/pages/login/login_page.dart';
 import '../../ui/pages/map/map_page.dart';
 import '../../ui/pages/my/my_page.dart';
 import '../../ui/pages/onboarding/onboarding_page.dart';
+import '../../ui/pages/pay/booth_paused_page.dart';
 import '../../ui/pages/pay/pay_page.dart';
 import '../../ui/pages/pay/checkout_page.dart';
 import '../../ui/pages/credit/credit_page.dart';
 import '../../ui/pages/transactions/transactions_page.dart';
-import '../../data/models/payment_models.dart';
+import '../../data/models/qr_pay.dart';
 import '../../ui/pages/shell/main_shell.dart';
 import 'routes.dart';
 
@@ -58,9 +59,16 @@ GoRouter createAppRouter({String? initialLocation}) {
       GoRoute(
         path: Routes.checkout,
         redirect: (context, state) =>
-            state.extra is PaymentBooth ? null : Routes.pay,
+            state.extra is QrPayInfo ? null : Routes.pay,
         builder: (context, state) =>
-            CheckoutPage(booth: state.extra! as PaymentBooth),
+            CheckoutPage(info: state.extra! as QrPayInfo),
+      ),
+      GoRoute(
+        path: Routes.payPaused,
+        redirect: (context, state) =>
+            state.extra is BoothPauseNotice ? null : Routes.pay,
+        builder: (context, state) =>
+            BoothPausedPage(notice: state.extra! as BoothPauseNotice),
       ),
 
       GoRoute(
